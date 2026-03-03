@@ -1,3 +1,4 @@
+//
 // This macro is use to convert nanoAOD(plus) ntuple to histograms
 // Usage: root -l -b -q HtoaaAna.cxx++
 
@@ -143,7 +144,12 @@ void HtoaaAna() {
   //
   TH1D *h_HiggsPt_Gen_First = new TH1D("h_HiggsPt_Gen_First", "h_HiggsPt_Gen_First", 50, 0., 500.);
   TH1D *h_HiggsPt_Gen_Last = new TH1D("h_HiggsPt_Gen_Last", "h_HiggsPt_Gen_Last", 50, 0., 500.);
-  
+  TH1D *h_HiggsPhi_Gen_First = new TH1D("h_HiggsPhi_Gen_First", "h_HiggsPhi_Gen_First", 50, -3.2, 3.2);
+  TH1D *h_HiggsPhi_Gen_Last = new TH1D("h_HiggsPhi_Gen_Last", "h_HiggsPhi_Gen_Last", 50, -3.2, 3.2);
+  TH1D *h_HiggsEta_Gen_First = new TH1D("h_HiggsEta_Gen_First", "h_HiggsEta_Gen_First", 50, -7., 7.);
+  TH1D *h_HiggsEta_Gen_Last = new TH1D("h_HiggsEta_Gen_Last", "h_HiggsPhi_Gen_Last", 50, -7., 7.);
+  TH1D *h_HiggsMass_Gen_First = new TH1D("h_HiggsMass_Gen_First", "h_HiggsMass_Gen_First", 50, 0., 260.);
+  TH1D *h_HiggsMass_Gen_Last = new TH1D("h_HiggsMass_Gen_Last", "h_HiggsMass_Gen_Last", 50, 0., 260.);
   TH2D *h2_HiggsPt_GenFirst_GenLast = new TH2D("h2_HiggsPt_GenFirst_GenLast", "h2_HiggsPt_GenFirst_GenLast", 50, 0., 500., 50, 0., 500.);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -209,7 +215,12 @@ void HtoaaAna() {
     
     h_HiggsPt_Gen_First->Fill(GenPart_pt[isFirst]); 
     h_HiggsPt_Gen_Last->Fill(GenPart_pt[isLast]);
-    
+    h_HiggsPhi_Gen_First->Fill(GenPart_phi[isFirst]);
+    h_HiggsPhi_Gen_Last->Fill(GenPart_phi[isLast]);
+    h_HiggsEta_Gen_First->Fill(GenPart_eta[isFirst]);
+    h_HiggsEta_Gen_Last->Fill(GenPart_eta[isLast]);
+    h_HiggsMass_Gen_First->Fill(GenPart_mass[isFirst]);
+    h_HiggsMass_Gen_Last->Fill(GenPart_mass[isLast]);
     h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst],GenPart_pt[isLast]);
 
   }
@@ -229,6 +240,12 @@ void HtoaaAna() {
 
   h_HiggsPt_Gen_First->Write();
   h_HiggsPt_Gen_Last->Write();
+  h_HiggsPhi_Gen_First->Write();
+  h_HiggsPhi_Gen_Last->Write();
+  h_HiggsEta_Gen_First->Write();
+  h_HiggsEta_Gen_Last->Write();
+  h_HiggsMass_Gen_First->Write();
+  h_HiggsMass_Gen_Last->Write();
   h2_HiggsPt_GenFirst_GenLast->Write();
  
   fout.Close();
