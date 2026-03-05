@@ -23,6 +23,10 @@
 #include "TLorentzVector.h"
 #include "TPaveStats.h"
 
+#include <fstream>
+#include <string>
+#include <vector> // or <list>
+
 void HtoaaAna() {
   
   TH1::SetDefaultSumw2(true);
@@ -33,19 +37,30 @@ void HtoaaAna() {
   // Chain your tree
   TChain *t1 = new TChain("Events");
   
-  string inDir = "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/VBFH-HToAATo4B_Par-M-30_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/";
+  string inDir = "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/GluGluH-01J-HToAATo4B_Par-M-35_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/";
 
-  // 
-  string infile = "130f44e7-c170-4379-9531-71c2a5ae0ec2.root";
+  // Add a single file
+  //string infile = "0afb91ad-bf79-4830-ba1a-ebb5b2a0b4b4.root";  
+  //t1->Add((inDir + infile).c_str());
 
-  t1->Add((inDir + infile).c_str());
-
+  // Add multiple files
+  std::vector<std::string> words;
+  std::ifstream file("List_GluGluH-01J-HToAATo4B_Par-M-35.txt");
+  std::string word;
+  // Read words one by one using the extraction operator (>>) until the end of the file
+  while (file >> word) {
+    words.push_back(word); // Add the read word to the vector
+  }
+  for (const std::string& w : words) {
+    t1->Add((inDir + w).c_str());
+    std::cout << w << std::endl;
+  }
+  
   // MuMonitor validation example with Muon 2010 dataset
   string outfile = "HtoaaAna_Histos.root";              // version NanoAODRun1_v1
 
   TFile fout((outfile).c_str(),"RECREATE");
 
-  cout << "reading " << inDir << infile << endl;
   cout << "writing to " << outfile << endl;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,8 +175,9 @@ void HtoaaAna() {
   // Loop over all events
   for (int aa = 0; aa < nevent; aa++) {
  
-    if (aa % 1 == 0) cout << "event nr " << aa << endl;
-
+    if (aa>10000) continue; /// still not too many events yet
+    if (aa % 100 == 0) cout << "event nr " << aa << endl;
+    
     // Get the entry of your event
     t1->GetEntry(aa);
 
@@ -205,7 +221,7 @@ void HtoaaAna() {
 
     }
 
-    std::cout << "event # etc: " << event << " " << isFirst << " " << isLast << std::endl;
+    //std::cout << "event # etc: " << event << " " << isFirst << " " << isLast << std::endl;
     
     h_HiggsPt_Gen_First->Fill(GenPart_pt[isFirst]); 
     h_HiggsPt_Gen_Last->Fill(GenPart_pt[isLast]);
