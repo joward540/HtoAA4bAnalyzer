@@ -23,7 +23,6 @@
 #include "TBufferFile.h"
 #include "TLorentzVector.h"
 #include "TPaveStats.h"
-
 #include <fstream>
 #include <string>
 #include <vector> // or <list>
@@ -111,7 +110,6 @@ void HtoaaAna() {
   t1->SetBranchStatus("run", 1);
   t1->SetBranchStatus("event", 1);
   t1->SetBranchStatus("luminosityBlock", 1);
-
   t1->SetBranchStatus("nGenPart", 1);
   t1->SetBranchStatus("GenPart_eta", 1);
   t1->SetBranchStatus("GenPart_mass", 1);
@@ -131,8 +129,7 @@ void HtoaaAna() {
 
   t1->SetBranchAddress("run", &run);
   t1->SetBranchAddress("event", &event);
-  t1->SetBranchAddress("luminosityBlock", &luminosityBlock);
-  
+  t1->SetBranchAddress("luminosityBlock", &luminosityBlock);  
   t1->SetBranchAddress("nGenPart", &nGenPart);
   t1->SetBranchAddress("GenPart_eta", GenPart_eta);
   t1->SetBranchAddress("GenPart_mass", GenPart_mass);
@@ -160,6 +157,7 @@ void HtoaaAna() {
   TH1D *h_HiggsPt_Gen_First = new TH1D("h_HiggsPt_Gen_First", "h_HiggsPt_Gen_First", 50, 0., 500.);
   TH1D *h_HiggsPt_Gen_Last = new TH1D("h_HiggsPt_Gen_Last", "h_HiggsPt_Gen_Last", 50, 0., 500.);
   TH1D *h_HiggsPhi_Gen_First = new TH1D("h_HiggsPhi_Gen_First", "h_HiggsPhi_Gen_First", 50, -3.2, 3.2);
+  TH1D *h_HiggsPhi_Gen_First_Pt_GreaterThan1 = new TH1D("h_HiggsPhi_Gen_First_Pt_GreaterThan1", "h_HiggsPhi_Gen_First_Pt_GreaterThan1", 50, -3.2, 3.2); 
   TH1D *h_HiggsPhi_Gen_Last = new TH1D("h_HiggsPhi_Gen_Last", "h_HiggsPhi_Gen_Last", 50, -3.2, 3.2);
   TH1D *h_HiggsEta_Gen_First = new TH1D("h_HiggsEta_Gen_First", "h_HiggsEta_Gen_First", 50, -7., 7.);
   TH1D *h_HiggsEta_Gen_Last = new TH1D("h_HiggsEta_Gen_Last", "h_HiggsEta_Gen_Last", 50, -7., 7.);
@@ -181,7 +179,7 @@ void HtoaaAna() {
   // Loop over all events
   for (int aa = 0; aa < nevent; aa++) {
  
-    if (aa>10000) continue; /// still not too many events yet
+    if (aa>100000) continue; /// still not too many events yet
     if (aa % 100 == 0) cout << "event nr " << aa << endl;
     
     // Get the entry of your event
@@ -232,6 +230,8 @@ void HtoaaAna() {
     h_HiggsPt_Gen_First->Fill(GenPart_pt[isFirst]); 
     h_HiggsPt_Gen_Last->Fill(GenPart_pt[isLast]);
     h_HiggsPhi_Gen_First->Fill(GenPart_phi[isFirst]);
+    	if (GenPart_pt[isFirst] > 1.0) {h_HiggsPhi_Gen_First_Pt_GreaterThan1->Fill(GenPart_phi[isFirst]);
+	}
     h_HiggsPhi_Gen_Last->Fill(GenPart_phi[isLast]);
     h_HiggsEta_Gen_First->Fill(GenPart_eta[isFirst]);
     h_HiggsEta_Gen_Last->Fill(GenPart_eta[isLast]);
@@ -253,10 +253,10 @@ void HtoaaAna() {
   GM_run->Write();
   GM_event->Write();
   GM_luminosityBlock->Write();
-
   h_HiggsPt_Gen_First->Write();
   h_HiggsPt_Gen_Last->Write();
   h_HiggsPhi_Gen_First->Write();
+  h_HiggsPhi_Gen_First_Pt_GreaterThan1->Write();
   h_HiggsPhi_Gen_Last->Write();
   h_HiggsEta_Gen_First->Write();
   h_HiggsEta_Gen_Last->Write();
