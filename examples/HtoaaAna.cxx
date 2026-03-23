@@ -165,7 +165,7 @@ void HtoaaAna() {
   TH1D *h_HiggsMass_Gen_First = new TH1D("h_HiggsMass_Gen_First", "h_HiggsMass_Gen_First", 50, 124., 126.);
   TH1D *h_HiggsMass_Gen_Last = new TH1D("h_HiggsMass_Gen_Last", "h_HiggsMass_Gen_Last", 50, 124., 126.);
   TH2D *h2_HiggsPt_GenFirst_GenLast = new TH2D("h2_HiggsPt_GenFirst_GenLast", "h2_HiggsPt_GenFirst_GenLast", 50, 0., 500., 50, 0., 500.);
-  TH2D *h2_HiggsPt_Cut_GenFirst_GenLast = new TH2D("h2_HiggsPt_CUT_GenFirst_GenLast", "h2_HiggsPt_CUT_GenFirst_GenLast", 50, 0., 500., 50., 0., 500.);
+  TH2D *h2_HiggsPt_Cut_GenFirst_GenLast = new TH2D("h2_HiggsPt_Cut_GenFirst_GenLast", "h2_HiggsPt_Cut_GenFirst_GenLast", 50, 0., 500., 50., 0., 500.);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////// Declare your histogram end //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +238,7 @@ void HtoaaAna() {
     h_HiggsEta_Gen_Last->Fill(GenPart_eta[isLast]);
     h_HiggsMass_Gen_First->Fill(GenPart_mass[isFirst]);
     h_HiggsMass_Gen_Last->Fill(GenPart_mass[isLast]);
-    h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst],GenPart_pt[isLast]);}
+    h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);}
   	if (GenPart_pt[isFirst] > 0.) {h2_HiggsPt_Cut_GenFirst_GenLast->Fill(GenPart[isFirst], GenPart[isLast]);}	
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// End analyze! ///////////////////////////////////
