@@ -241,7 +241,7 @@ void HtoaaAna() {
     h_HiggsMass_Gen_First->Fill(GenPart_mass[isFirst]);
     h_HiggsMass_Gen_Last->Fill(GenPart_mass[isLast]);
     h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);}
-  	if (GenPart_pt[isFirst] > 0.) {h2_HiggsPt_Cut_GenFirst_GenLast->Fill(GenPart[isFirst], GenPart[isLast]);
+  	if (GenPart_pt[isFirst] > 0.) {h2_HiggsPt_Cut_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);
 	}	
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// End analyze! ///////////////////////////////////
