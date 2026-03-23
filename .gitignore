@@ -1,0 +1,8 @@
+# Build artifacts (ROOT / CMSSW)
+*.so
+*.pcm
+*.d
+
+# Output files
+*.root
+*.log
