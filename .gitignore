@@ -1,7 +1,7 @@
 # Build artifacts (ROOT / CMSSW)
-#*.so
-#*.pcm
-#*.d
+*.so
+*.pcm
+*.d
 
 # Output files
 *.root
