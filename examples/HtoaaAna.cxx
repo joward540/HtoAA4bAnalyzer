@@ -229,17 +229,29 @@ void HtoaaAna() {
     //std::cout << "event # etc: " << event << " " << isFirst << " " << isLast << std::endl;
     
     h_HiggsPt_Gen_First->Fill(GenPart_pt[isFirst]); 
-    if (GenPart_pt[isFirst] > 0.) {h_HiggsPt_Greaterthan0_Gen_First->Fill(GenPart_pt[isFirst]);}
+    
+    if (GenPart_pt[isFirst] > 0.) {
+	    h_HiggsPt_Greaterthan0_Gen_First->Fill(GenPart_pt[isFirst]);
+    }
+    
     h_HiggsPt_Gen_Last->Fill(GenPart_pt[isLast]);
     h_HiggsPhi_Gen_First->Fill(GenPart_phi[isFirst]);
-    if (GenPart_pt[isFirst] > 1.0) {h_HiggsPhi_Gen_First_Pt_GreaterThan1->Fill(GenPart_phi[isFirst]);}
+    
+    if (GenPart_pt[isFirst] > 1.0) {
+	    h_HiggsPhi_Gen_First_Pt_GreaterThan1->Fill(GenPart_phi[isFirst]);
+    }
+    
     h_HiggsPhi_Gen_Last->Fill(GenPart_phi[isLast]);
     h_HiggsEta_Gen_First->Fill(GenPart_eta[isFirst]);
     h_HiggsEta_Gen_Last->Fill(GenPart_eta[isLast]);
     h_HiggsMass_Gen_First->Fill(GenPart_mass[isFirst]);
     h_HiggsMass_Gen_Last->Fill(GenPart_mass[isLast]);
-    h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);}
-    if (GenPart_pt[isFirst] > 0.) h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);}	
+    h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);
+
+    if (GenPart_pt[isFirst] > 0.) {
+	    h2_HiggsPt_Cut_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);
+    }
+  }
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// End analyze! ///////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
