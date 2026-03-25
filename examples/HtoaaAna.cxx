@@ -155,7 +155,7 @@ void HtoaaAna() {
   
   //
   TH1D *h_HiggsPt_Gen_First = new TH1D("h_HiggsPt_Gen_First", "h_HiggsPt_Gen_First", 50, 0., 500.);
-  TH1D *h_HiggsPt_Greaterthan0_Gen_First = new TH1D("h_HiggsPt_Greaterthan0_Gen_First", "h_HiggsPt_Greaterthan0_Gen_First", 50, 0., 500.);
+  TH1D *h_HiggsPt_Greaterthan1_Gen_First = new TH1D("h_HiggsPt_Greaterthan1_Gen_First", "h_HiggsPt_Greaterthan1_Gen_First", 50, 0., 500.);
   TH1D *h_HiggsPt_Gen_Last = new TH1D("h_HiggsPt_Gen_Last", "h_HiggsPt_Gen_Last", 50, 0., 500.);
   TH1D *h_HiggsPhi_Gen_First = new TH1D("h_HiggsPhi_Gen_First", "h_HiggsPhi_Gen_First", 50, -3.2, 3.2);
   TH1D *h_HiggsPhi_Gen_First_Pt_GreaterThan1 = new TH1D("h_HiggsPhi_Gen_First_Pt_GreaterThan1", "h_HiggsPhi_Gen_First_Pt_GreaterThan1", 50, -3.2, 3.2); 
@@ -230,8 +230,8 @@ void HtoaaAna() {
     
     h_HiggsPt_Gen_First->Fill(GenPart_pt[isFirst]); 
     
-    if (GenPart_pt[isFirst] > 0.) {
-	    h_HiggsPt_Greaterthan0_Gen_First->Fill(GenPart_pt[isFirst]);
+    if (GenPart_pt[isFirst] > 1.0) {
+	    h_HiggsPt_Greaterthan1_Gen_First->Fill(GenPart_pt[isFirst]);
     }
     
     h_HiggsPt_Gen_Last->Fill(GenPart_pt[isLast]);
@@ -248,7 +248,7 @@ void HtoaaAna() {
     h_HiggsMass_Gen_Last->Fill(GenPart_mass[isLast]);
     h2_HiggsPt_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);
 
-    if (GenPart_pt[isFirst] > 0.) {
+    if (GenPart_pt[isFirst] > 1.0) {
 	    h2_HiggsPt_Cut_GenFirst_GenLast->Fill(GenPart_pt[isFirst], GenPart_pt[isLast]);
     }
   }
@@ -265,7 +265,7 @@ void HtoaaAna() {
   GM_event->Write();
   GM_luminosityBlock->Write();
   h_HiggsPt_Gen_First->Write();
-  h_HiggsPt_Greaterthan0_Gen_First->Write();
+  h_HiggsPt_Greaterthan1_Gen_First->Write();
   h_HiggsPt_Gen_Last->Write();
   h_HiggsPhi_Gen_First->Write();
   h_HiggsPhi_Gen_First_Pt_GreaterThan1->Write();
