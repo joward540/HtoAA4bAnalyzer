@@ -57,7 +57,8 @@ void HtoaaAna() {
   }
   
   // MuMonitor validation example with Muon 2010 dataset
-  string outfile = "HtoaaAna_AK8_Histos.root";              // version NanoAODRun1_v1
+  //string outfile = "HtoaaAna_AK8_Histos.root";              // version NanoAODRun1_v1
+  string outfile = "HtoaaAna_RECO_Histos.root";          
 
   TFile fout((outfile).c_str(),"RECREATE");
 
