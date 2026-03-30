@@ -4,7 +4,7 @@ import ROOT
 ROOT.ROOT.EnableImplicitMT()
 
 # Load NanoAOD file
-rdf = ROOT.RDataFrame("Events", "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/VBFH-HToAATo4B_Par-M-30_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/130f44e7-c170-4379-9531-71c2a5ae0ec2.root")
+rdf = ROOT.RDataFrame("Events", "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/GluGluH-01J-HToAATo4B_Par-M-35_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/0afb91ad-bf79-4830-ba1a-ebb5b2a0b4b4.root")
 
 #-------------------------------------------------------------------------------
 
