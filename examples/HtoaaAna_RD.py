@@ -7,7 +7,7 @@ ROOT.ROOT.EnableImplicitMT()
 rdf = ROOT.RDataFrame("Events", "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/GluGluH-01J-HToAATo4B_Par-M-35_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/0afb91ad-bf79-4830-ba1a-ebb5b2a0b4b4.root")
 
 #-------------------------------------------------------------------------------
-
+'''
 # 1. Define a mask for GenParticles that are electrons (pdgId 11)
 # GenPart_pdgId is a vector branch, Define applies this per-event
 rdf_with_mask = rdf.Define("GenElecMask", "abs(GenPart_pdgId) == 11")
@@ -17,6 +17,18 @@ rdf_filtered = rdf_with_mask.Filter("ROOT::VecOps::Any(GenElecMask)")
 
 # 3. (Optional) Filter by pT: Keep events with electrons > 20 GeV
 rdf_final = rdf_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenElecMask] > 20)")
+'''
+
+#Define a Mask for Higgs (pdgId == 25) for GenParticles
+rdf_Higgs_Mask = rdf.Define("GenHiggsMask", "abs(GenPart_pdgId) == 25")\
+        .Define("GenPart_pt", "GenPart_pt[GenHiggsMask]")\
+        .Define("GenPart_phi", "GenPart_phi[GenHiggsMask]")\
+
+#Apply Higgs Mask
+rdf_H_filtered = rdf_Higgs_Mask.Filter("ROOT::VecOps::Any(GenHiggsMask)")
+
+#Define pT cut
+rdf_pt_cut = rdf_H_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenHiggsMask] > 1)")
 
 #-------------------------------------------------------------------------------
 
