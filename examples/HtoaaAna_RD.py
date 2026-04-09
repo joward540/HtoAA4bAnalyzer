@@ -1,10 +1,12 @@
 import ROOT
 
 # Enable multi-threading
-ROOT.ROOT.EnableImplicitMT()
+#ROOT.ROOT.EnableImplicitMT()
 
 # Load NanoAOD file
 rdf = ROOT.RDataFrame("Events", "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/GluGluH-01J-HToAATo4B_Par-M-35_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/0afb91ad-bf79-4830-ba1a-ebb5b2a0b4b4.root")
+
+#print('Data Frame:', rdf)
 
 #-------------------------------------------------------------------------------
 '''
@@ -19,16 +21,24 @@ rdf_filtered = rdf_with_mask.Filter("ROOT::VecOps::Any(GenElecMask)")
 rdf_final = rdf_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenElecMask] > 20)")
 '''
 
-#Define a Mask for Higgs (pdgId == 25) for GenParticles
-rdf_Higgs_Mask = rdf.Define("GenHiggsMask", "abs(GenPart_pdgId) == 25")\
-        .Define("GenPart_pt", "GenPart_pt[GenHiggsMask]")\
-        .Define("GenPart_phi", "GenPart_phi[GenHiggsMask]")\
+#Define a Mask for Higgs (pdgId == 24) for GenParticles
+rdf = rdf.Define("GenHiggsMask", "abs(GenPart_pdgId) == 25")\
+         .Define("Higgs_Gen_pt", "GenPart_pt[GenHiggsMask]")\
+         .Define("Higgs_Gen_phi", "GenPart_phi[GenHiggsMask]")\
+         .Define("Higgs_Gen_eta", "GenPart_eta[GenHiggsMask]")\
+         .Define("Higgs_Gen_mass", "GenPart_mass[GenHiggsMask]")
+
+columns = ["FatJet_pt","FatJet_eta","FatJet_phi","GenPart_pt","GenPart_eta","GenPart_phi","GenPart_pdgId","GenPart_status","GenPart_genPartIdxMother","Higgs_Gen_pt","Higgs_Gen_phi","Higgs_Gen_eta","Higgs_Gen_mass"]
+
+display = rdf.Display(columns,10)
+print(display.AsString())
+
 
 #Apply Higgs Mask
-rdf_H_filtered = rdf_Higgs_Mask.Filter("ROOT::VecOps::Any(GenHiggsMask)")
+#rdf_H_filtered = rdf_Higgs_Mask.Filter("ROOT::VecOps::Any(GenHiggsMask)")
 
 #Define pT cut
-rdf_pt_cut = rdf_H_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenHiggsMask] > 1)")
+#rdf_pt_cut = rdf_H_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenHiggsMask] > 1)")
 
 #-------------------------------------------------------------------------------
 
@@ -45,13 +55,17 @@ ROOT::RVecF getPromptLeptonPts(const ROOT::RVecF& pt, const ROOT::RVecI& status,
 }
 """)
 
+
 # Apply the function to the DataFrame
-rdf_with_pts = rdf.Define("PromptLepton_pt", "getPromptLeptonPts(GenPart_pt, GenPart_status, GenPart_pdgId)")
+#rdf_with_pts = rdf.Define("PromptLepton_pt", "getPromptLeptonPts(GenPart_pt, GenPart_status, GenPart_pdgId)")
 
 # Create a histogram of the result
-hist = rdf_with_pts.Histo1D(("PromptLepPt", "Prompt Lepton Pt;p_{T} [GeV];Events", 50, 0, 200), "PromptLepton_pt")
-hist.Draw()
+#hist = rdf_with_pts.Histo1D(("PromptLepPt", "Prompt Lepton Pt;p_{T} [GeV];Events", 50, 0, 200), "PromptLepton_pt")
+#hist.Draw()
 
+#Create pT Histogram
+h_Higgs_Gen_pt = rdf.Histo1D(("HiggsPt", "Higgs Pt; p_{T} [GeV];Events", 50, 0, 500), "GenPart_pt")
+h_Higgs_Gen_pt.Draw()
 #-------------------------------------------------------------------------------
 
 # Example 1: Select only GenParticles with status 1 and pt > 10 GeV
@@ -70,6 +84,7 @@ hist.Draw()
 
 # Save the histogram
 outfile = ROOT.TFile("output.root", "RECREATE")
-hist.Write()
+#hist.Write()
 #hist_gen_pt.Write()
+h_Higgs_Gen_pt.Write()
 outfile.Close()
