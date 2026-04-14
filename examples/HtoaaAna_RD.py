@@ -21,14 +21,30 @@ rdf_filtered = rdf_with_mask.Filter("ROOT::VecOps::Any(GenElecMask)")
 rdf_final = rdf_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenElecMask] > 20)")
 '''
 
-#Define a Mask for Higgs (pdgId == 24) for GenParticles
+#Define a Mask for Higgs (pdgId == 25) for GenParticles
 rdf = rdf.Define("GenHiggsMask", "abs(GenPart_pdgId) == 25")\
          .Define("Higgs_Gen_pt", "GenPart_pt[GenHiggsMask]")\
          .Define("Higgs_Gen_phi", "GenPart_phi[GenHiggsMask]")\
          .Define("Higgs_Gen_eta", "GenPart_eta[GenHiggsMask]")\
-         .Define("Higgs_Gen_mass", "GenPart_mass[GenHiggsMask]")
+         .Define("Higgs_Gen_mass", "GenPart_mass[GenHiggsMask]")\
+         .Define("Higgs_Gen_status", "GenPart_status[GenHiggsMask]")
 
-columns = ["FatJet_pt","FatJet_eta","FatJet_phi","GenPart_pt","GenPart_eta","GenPart_phi","GenPart_pdgId","GenPart_status","GenPart_genPartIdxMother","Higgs_Gen_pt","Higgs_Gen_phi","Higgs_Gen_eta","Higgs_Gen_mass"]
+#Define the isFirst Mask (status == 22)
+rdf = rdf.Define("isFirst", "abs(Higgs_Gen_status) == 22")\
+         .Define("Higgs_GenFirst_pt", "Higgs_Gen_pt[isFirst]")\
+         .Define("Higgs_GenFirst_phi", "Higgs_Gen_phi[isFirst]")\
+         .Define("Higgs_GenFirst_eta", "Higgs_Gen_eta[isFirst]")\
+         .Define("Higgs_GenFirst_mass", "Higgs_Gen_mass[isFirst]")
+
+#Define the isLast Mask (status == 62)
+rdf = rdf.Define("isLast", "abs(Higgs_Gen_status) == 62")\
+         .Define("Higgs_GenLast_pt", "Higgs_Gen_pt[isLast]")\
+         .Define("Higgs_GenLast_phi", "Higgs_Gen_phi[isLast]")\
+         .Define("Higgs_GenLast_eta", "Higgs_Gen_eta[isLast]")\
+         .Define("Higgs_GenLast_mass", "Higgs_Gen_mass[isLast]")
+
+columns = ["GenPart_pdgId","GenPart_status","GenPart_genPartIdxMother",
+             "Higgs_GenFirst_pt","Higgs_GenFirst_phi","Higgs_GenFirst_eta","Higgs_GenFirst_mass","Higgs_GenLast_pt","Higgs_GenLast_phi","Higgs_GenLast_eta","Higgs_GenLast_mass"]
 
 display = rdf.Display(columns,10)
 print(display.AsString())
@@ -64,7 +80,7 @@ ROOT::RVecF getPromptLeptonPts(const ROOT::RVecF& pt, const ROOT::RVecI& status,
 #hist.Draw()
 
 #Create pT Histogram
-h_Higgs_Gen_pt = rdf.Histo1D(("HiggsPt", "Higgs Pt; p_{T} [GeV];Events", 50, 0, 500), "GenPart_pt")
+h_Higgs_Gen_pt = rdf.Histo1D(("Higgs_Gen_pt", "Higgs Pt; p_{T} [GeV];Events", 50, 0, 500), "Higgs_Gen_pt")
 h_Higgs_Gen_pt.Draw()
 #-------------------------------------------------------------------------------
 
