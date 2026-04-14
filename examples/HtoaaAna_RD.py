@@ -53,8 +53,8 @@ print(display.AsString())
 #Apply Higgs Mask
 #rdf_H_filtered = rdf_Higgs_Mask.Filter("ROOT::VecOps::Any(GenHiggsMask)")
 
-#Define pT cut
-#rdf_pt_cut = rdf_H_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenHiggsMask] > 1)")
+
+
 
 #-------------------------------------------------------------------------------
 
@@ -79,9 +79,36 @@ ROOT::RVecF getPromptLeptonPts(const ROOT::RVecF& pt, const ROOT::RVecI& status,
 #hist = rdf_with_pts.Histo1D(("PromptLepPt", "Prompt Lepton Pt;p_{T} [GeV];Events", 50, 0, 200), "PromptLepton_pt")
 #hist.Draw()
 
-#Create pT Histogram
-h_Higgs_Gen_pt = rdf.Histo1D(("Higgs_Gen_pt", "Higgs Pt; p_{T} [GeV];Events", 50, 0, 500), "Higgs_Gen_pt")
-h_Higgs_Gen_pt.Draw()
+#Generate kinematic histograms
+#Gen-Level First
+h_Higgs_GenFirst_pt = rdf.Histo1D(("Higgs_GenFirst_pt", "Higgs Gen First p_{T}; p_{T} [GeV]; Events", 50, 0., 500), "Higgs_GenFirst_pt")
+h_Higgs_GenFirst_phi = rdf.Histo1D(("Higgs_GenFirst_phi", "Higgs Gen First /phi; /phi; Events", 50, -3.2, 3.2), "Higgs_GenFirst_phi")
+h_Higgs_GenFirst_eta = rdf.Histo1D(("Higgs_GenFirst_eta", "Higgs Gen First /eta; /eta; Events", 50, -7., 7.), "Higgs_GenFirst_eta")
+h_Higgs_GenFirst_mass = rdf.Histo1D(("Higgs_GenFirst_mass", "Higgs Gen First Mass; Mass [GeV]; Events", 50, 124., 126.), "Higgs_GenFirst_mass")
+#Gen-Level Last
+h_Higgs_GenLast_pt = rdf.Histo1D(("Higgs_GenLast_pt", "Higgs Gen Last p_{T}; p_{T} [GeV]; Events", 50, 0., 500), "Higgs_GenLast_pt")
+h_Higgs_GenLast_phi = rdf.Histo1D(("Higgs_GenLast_phi", "Higgs Gen Last /phi; /phi; Events", 50, -3.2, 3.2), "Higgs_GenLast_phi")
+h_Higgs_GenLast_eta = rdf.Histo1D(("Higgs_GenLast_eta", "Higgs Gen Last /eta; /eta; Events", 50, -7., 7.), "Higgs_GenLast_eta")
+h_Higgs_GenLast_mass = rdf.Histo1D(("Higgs_GenLast_mass", "Higgs Gen Last Mass; Mass [GeV]; Events", 50, 124., 126.), "Higgs_GenLast_mass")
+#Gen-Level 2D
+h2_HiggsPt_GenFirst_GenLast = rdf.Histo2D(("Higgs_GenFirst_pt", "Higgs p_{T} Gen First v Gen Last; p_{T} [GeV]; p_{T} [GeV]", 100, 0., 1000., 100, 0., 1000.), "Higgs_GenFirst_pt", "Higgs_GenLast_pt")
+
+
+
+#Draw kinematic histograms
+#Gen-Level First
+h_Higgs_GenFirst_pt.Draw()
+h_Higgs_GenFirst_phi.Draw()
+h_Higgs_GenFirst_eta.Draw()
+h_Higgs_GenFirst_mass.Draw()
+#Gen-Level Last
+h_Higgs_GenLast_pt.Draw()
+h_Higgs_GenLast_phi.Draw()
+h_Higgs_GenLast_eta.Draw()
+h_Higgs_GenLast_mass.Draw()
+#Gen-Level 2D
+h2_HiggsPt_GenFirst_GenLast.Draw()
+
 #-------------------------------------------------------------------------------
 
 # Example 1: Select only GenParticles with status 1 and pt > 10 GeV
@@ -99,8 +126,20 @@ h_Higgs_Gen_pt.Draw()
 #-------------------------------------------------------------------------------
 
 # Save the histogram
-outfile = ROOT.TFile("output.root", "RECREATE")
-#hist.Write()
-#hist_gen_pt.Write()
-h_Higgs_Gen_pt.Write()
+outfile = ROOT.TFile("Higgs_Gen_HISTOS.root", "RECREATE")
+
+#Save Gen-Level kinematic histograms
+#Gen-Level First
+h_Higgs_GenFirst_pt.Write()
+h_Higgs_GenFirst_phi.Write()
+h_Higgs_GenFirst_eta.Write()
+h_Higgs_GenFirst_mass.Write()
+#Gen-Level Last
+h_Higgs_GenLast_pt.Write()
+h_Higgs_GenLast_phi.Write()
+h_Higgs_GenLast_eta.Write()
+h_Higgs_GenLast_mass.Write()
+#Gen-Level 2D
+h2_HiggsPt_GenFirst_GenLast.Write()
+
 outfile.Close()
