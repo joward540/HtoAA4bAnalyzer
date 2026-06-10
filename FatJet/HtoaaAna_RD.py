@@ -1,15 +1,68 @@
 import ROOT
 import numpy as np
+import os
+import glob
+from pathlib import Path
 
 # Enable multi-threading
 #ROOT.ROOT.EnableImplicitMT()
 
+
+
+
+
+#-------------------------------------------------------------------------------#File load Module------------------------------------------------------------------------------------------#
+
+#Input Directories
+
+#Here is the parent directory with the NanoAOD files we need.
+input_dir = [Path('/cms/data/store/user/hatake/ParTV2V3_Nanov15_v2')]
+
+#Here is a list of all the subdirectories we may need for this analysis.
+input_subdir = ['GluGluH-01J-HToAATo4B_Par-M-30_13p6TeV', 'GluGluH-01J-HToAATo4B_Par-M-35_13p6TeV', 'QCD0B-4Jets_Bin-HT-800to1000_Fil-BPS_13p6TeV', 'QCDB-4Jets_Bin-HT-800to1000_13p6TeV']
+
+
+#Here is the pattern for the files that we will import.
+nanoaod = ['Summer24NanoAODv15_*.root']
+
+
+#ROOT files. Now let's build a consolidate the list of relevant directories.
+analysis_list = [input_dir / input_subdir for directory in input_dir for subdir in input_subdir]
+
+
+#Let's build some safety into this approach. We'll keep track of any directories that weare looking for but are missing. This may come in handy if our directory or subdirectory list ever gets long.
+missing = [item for item in analysis_list if not item.isdir()]
+
+for item in missing:
+    print(f"{item} is missing.")
+
+#Let's assemble the list of ROOT files.
+rf_list = sorted({str(rootfile) for rdir in analysis_list for pattern in nanoaod for rootfile in rdir.glob(pattern)})
+
+
+#Finally, let's send our list of files to ROOT.
+
+#We'll include a test in case the list is huge.
+# rf_list = rf_list[:40]
+
+#Convert to a C++ vector<string>
+
+#Initialize an empty c++ vector of strings
+multi_file_vec = ROOT.std.vector("string")()
+
+#fill the c++ vector with the rootfile names.
+for rf in rf_list:
+    multi_file_vec.push_back(rf)
+#-----------------------------------------------------------------------------#Legacy File Load (Single File)------------------------------------------------------------------------------#
+
+
+"""
 # Load NanoAOD file
 rdf = ROOT.RDataFrame("Events", "/cms/data/store/mc/RunIII2024Summer24NanoAODv15/GluGluH-01J-HToAATo4B_Par-M-35_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2520000/0afb91ad-bf79-4830-ba1a-ebb5b2a0b4b4.root")
+"""
 
-#print('Data Frame:', rdf)
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 '''
 # 1. Define a mask for GenParticles that are electrons (pdgId 11)
 # GenPart_pdgId is a vector branch, Define applies this per-event
@@ -21,6 +74,9 @@ rdf_filtered = rdf_with_mask.Filter("ROOT::VecOps::Any(GenElecMask)")
 # 3. (Optional) Filter by pT: Keep events with electrons > 20 GeV
 rdf_final = rdf_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenElecMask] > 20)")
 '''
+
+#-------------------------------------------------------------------------------#Gen-Level Module------------------------------------------------------------------------------------------#
+#We Define Gen-Level variables and process them in this block.
 
 #Define a Mask for Higgs (pdgId == 25) for GenParticles. Include the pt cut here (pt > 1)
 rdf = rdf.Define("GenHiggsMask", "GenPart_pdgId == 25")\
@@ -45,6 +101,24 @@ rdf = rdf.Define("isLast", "Higgs_Gen_status == 62")\
          .Define("Higgs_GenLast_mass", "Higgs_Gen_mass[isLast]")
 
 
+
+
+#-----------------------------------------------------------------------------#Particle Transformer Module---------------------------------------------------------------------------------#
+
+#Particle Transformer Module. We'll define ParT2 and ParT3 variables here. 
+
+#Convert our c++ vector into RDataFrame
+rdf = ROOT.RDataFrame("Events", multi_file_vec)
+
+
+
+
+
+
+
+
+
+#---------------------------------------------------------------------------------#Mismatch Debug------------------------------------------------------------------------------------------#
 #Define the debugger to find the mismatch between isFirst pt and isLast pt.
 """
 rdf_debug = (
@@ -78,7 +152,7 @@ display = rdf.Display(columns,10)
 
 
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Define C++ function to find specific GenParticles
 # Here we find GenPart_pt of prompt leptons (status 1)
@@ -102,6 +176,7 @@ ROOT::RVecF getPromptLeptonPts(const ROOT::RVecF& pt, const ROOT::RVecI& status,
 #hist.Draw()
 
 
+#---------------------------------------------------------------------------#Gen-Level Histogram Module------------------------------------------------------------------------------------#
 
 #Generate Gen-Level kinematic histograms
 #Gen-Level First
@@ -133,7 +208,7 @@ h_Higgs_GenLast_mass.Draw()
 #Gen-Level 2D
 h2_HiggsPt_GenFirst_GenLast.Draw()
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Example 1: Select only GenParticles with status 1 and pt > 10 GeV
 # GenPart_pt is typically a ROOT::RVec<float>
@@ -147,7 +222,7 @@ h2_HiggsPt_GenFirst_GenLast.Draw()
 # Example 3: Histogramming PT of specific GenParticles
 #hist_gen_pt = rdf_with_rapidity.Histo1D(("gen_pt", "GenPart Pt;Pt [GeV];Counts", 100, 0, 100), "GenPart_pt")
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Save the histogram
 outfile = ROOT.TFile("Higgs_Gen_HISTOS_RAW.root", "RECREATE")
