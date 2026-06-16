@@ -1,8 +1,33 @@
-# Build artifacts (ROOT / CMSSW)
-*.so
-*.pcm
-*.d
+# Ignore everything by default
+*
 
-# Output files
-*.root
-*.log
+# Allow Git to search inside directories
+!*/
+
+# Keep only the root .gitignore
+!/.gitignore
+
+# Python scripts
+!*.py
+
+# Shell scripts
+!*.sh
+!*.bash
+!*.csh
+!*.tcsh
+
+# ROOT/C/C++ source scripts
+!*.C
+!*.c
+!*.cc
+!*.cpp
+!*.cxx
+!*.h
+!*.hh
+!*.hpp
+
+# Fortran source
+!*.f
+!*.F
+!*.f90
+!*.F90
