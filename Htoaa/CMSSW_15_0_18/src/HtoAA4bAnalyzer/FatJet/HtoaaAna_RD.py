@@ -1,5 +1,7 @@
 import ROOT
 import numpy as np
+import scipy as sp
+import matplotlib.pyplot as plt
 import os
 import glob
 from pathlib import Path
@@ -19,19 +21,18 @@ from pathlib import Path
 input_dir = [Path('/cms/data/store/user/hatake/ParTV2V3_Nanov15_v2')]
 
 #Here is a list of all the subdirectories we may need for this analysis.
-input_subdir = ['GluGluH-01J-HToAATo4B_Par-M-30_13p6TeV', 'GluGluH-01J-HToAATo4B_Par-M-35_13p6TeV', 'QCD0B-4Jets_Bin-HT-800to1000_Fil-BPS_13p6TeV', 'QCDB-4Jets_Bin-HT-800to1000_13p6TeV']
+input_subdir = ['GluGluH-01J-HToAATo4B_Par-M-30_13p6TeV'] #, 'GluGluH-01J-HToAATo4B_Par-M-35_13p6TeV', 'QCD0B-4Jets_Bin-HT-800to1000_Fil-BPS_13p6TeV', 'QCDB-4Jets_Bin-HT-800to1000_13p6TeV']
 
 
 #Here is the pattern for the files that we will import.
-nanoaod = ['Summer24NanoAODv15_*.root']
+nanoaod = ['Summer24NanoAODv15_GluGluH-01J-HToAATo4B_Par-M-30_13p6TeV_job*.root']
 
 
 #ROOT files. Now let's build and consolidate the list of relevant directories.
-analysis_list = [input_dir / input_subdir for directory in input_dir for subdir in input_subdir]
-
+analysis_list = [directory / subdir for directory in input_dir for subdir in input_subdir]
 
 #Let's build some safety into this approach. We'll keep track of any directories that weare looking for but are missing. This may come in handy if our directory or subdirectory list ever gets long.
-missing = [item for item in analysis_list if not item.isdir()]
+missing = [item for item in analysis_list if not item.is_dir()]
 
 for item in missing:
     print(f"{item} is missing.")
@@ -78,6 +79,7 @@ rdf_final = rdf_filtered.Filter("ROOT::VecOps::Any(GenPart_pt[GenElecMask] > 20)
 #-------------------------------------------------------------------------------#Gen-Level Module------------------------------------------------------------------------------------------#
 #We Define Gen-Level variables and process them in this block.
 
+"""
 #Define a Mask for Higgs (pdgId == 25) for GenParticles. Include the pt cut here (pt > 1)
 rdf = rdf.Define("GenHiggsMask", "GenPart_pdgId == 25")\
          .Define("Higgs_Gen_pt", "GenPart_pt[GenHiggsMask]")\
@@ -99,7 +101,7 @@ rdf = rdf.Define("isLast", "Higgs_Gen_status == 62")\
          .Define("Higgs_GenLast_phi", "Higgs_Gen_phi[isLast]")\
          .Define("Higgs_GenLast_eta", "Higgs_Gen_eta[isLast]")\
          .Define("Higgs_GenLast_mass", "Higgs_Gen_mass[isLast]")
-
+"""
 
 
 
@@ -110,26 +112,55 @@ rdf = rdf.Define("isLast", "Higgs_Gen_status == 62")\
 #Convert our c++ vector into RDataFrame
 rdf = ROOT.RDataFrame("Events", multi_file_vec)
 
-#Let's set up a mask to make sure we only investigate events with some tagger score in the desired final state.
-rdf = rdf.Define("has4bScore","FatJet_nBHadrons >= 4")\
+
+
+#Declare a helper function in case FatJet_genAK8Idx is a different length than GenJetAK8_nBHadrons.
+ROOT.gInterpreter.Declare("""
+#include "ROOT/RVec.hxx"
+#include <cstddef>
+
+ROOT::RVecI getHas4bScoreMask(const ROOT::RVecI& fatjet_genjet_idx,
+                              const ROOT::RVecI& genjet_nBHadrons) {
+    ROOT::RVecI mask(fatjet_genjet_idx.size(), 0);
+
+    for (std::size_t i = 0; i < fatjet_genjet_idx.size(); ++i) {
+        int idx = fatjet_genjet_idx[i];
+
+        if (idx >= 0 && static_cast<std::size_t>(idx) < genjet_nBHadrons.size()) {
+            if (genjet_nBHadrons[idx] >= 4) {
+                mask[i] = 1;
+            }
+        }
+    }
+
+    return mask;
+}
+""")
+
+
+#Let's set up a mask to make sure we only investigate events with some tagger score in the desired final state. "FatJet_pt > 300" getHas4bScoreMask(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+rdf = rdf.Define("has4bScore", "getHas4bScoreMask(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")\
          .Define("FatJet_4b_pt", "FatJet_pt[has4bScore]")\
          .Define("FatJet_4b_eta", "FatJet_eta[has4bScore]")\
-         .Define("FatJet_4b_msoftdrop", "FatJet_msosftdrop[has4bScore]")\
+         .Define("FatJet_4b_msoftdrop", "FatJet_msoftdrop[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_3b", "FatJet_globalParT2_probHZxZxbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_4b", "FatJet_globalParT2_probHZxZxbbbb[has4bScore]")\
+         .Define("FatJet_4b_gl_ParT2_QCD", "FatJet_globalParT2_probQCDb[has4bScore] + FatJet_globalParT2_probQCDbb[has4bScore] + FatJet_globalParT2_probQCDc[has4bScore] + FatJet_globalParT2_probQCDcc[has4bScore] + FatJet_globalParT2_probQCDothers[has4bScore]")\
+         .Define("FatJet_4b_gl_ParT2_3b_Normed", "FatJet_4b_gl_ParT2_3b /(FatJet_4b_gl_ParT2_3b +  FatJet_4b_gl_ParT2_QCD)")\
          .Define("FatJet_4b_gl_ParT3_3b", "FatJet_globalParT3_probRawHZxZxbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT3_4b", "FatJet_globalParT3_probRawHZxZxbbbb[has4bScore]")\
-         #Add ParT2 variables for off-shell Z bosons
+         .Define("FatJet_4b_gl_ParT3_QCD", "FatJet_globalParT3_QCD[has4bScore]")\
+         .Define("FatJet_4b_gl_ParT3_3b_Normed", "FatJet_4b_gl_ParT3_3b /(FatJet_4b_gl_ParT3_3b +  FatJet_4b_gl_ParT3_QCD)")
+"""
          .Define("FatJet_4b_gl_ParT2_3b_adv1", "FatJet_globalParT2_probHZxZxStarbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_4b_adv1", "FatJet_globalParT2_probHZxZxStarbbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_3b_adv2", "FatJet_globalParT2_probHZZbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_4b_adv2", "FatJet_globalParT2_probHZZbbbb[has4bScore]")\
-         #Add ParT3 variables for off-shell Z bosons
          .Define("FatJet_4b_gl_ParT3_3b_adv1", "FatJet_globalParT3_probRawHZxZxStarbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT3_4b_adv1", "FatJet_globalParT3_probRawHZxZxStarbbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT3_3b_adv2", "FatJet_globalParT3_probRawHZZbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT3_4b_adv2", "FatJet_globalParT3_probRawHZZbbbb[has4bScore]")
-
+"""
 
 
 
@@ -154,7 +185,7 @@ rdf_debug.Filter("n_Higgs_GenFirst_pt != n_Higgs_GenLast_pt") \
          "Higgs_GenFirst_pt", "Higgs_GenLast_pt"],
         10
     ).Print()
-"""
+
 
 
 columns = ["GenPart_pdgId","GenPart_status","GenPart_genPartIdxMother",
@@ -166,7 +197,7 @@ display = rdf.Display(columns,10)
 
 #Apply Higgs Mask
 #rdf_H_filtered = rdf_Higgs_Mask.Filter("ROOT::VecOps::Any(GenHiggsMask)")
-
+"""
 
 
 
@@ -195,7 +226,7 @@ ROOT::RVecF getPromptLeptonPts(const ROOT::RVecF& pt, const ROOT::RVecI& status,
 
 
 #---------------------------------------------------------------------------#Gen-Level Histogram Module------------------------------------------------------------------------------------#
-
+"""
 #Generate Gen-Level kinematic histograms
 #Gen-Level First
 h_Higgs_GenFirst_pt = rdf.Histo1D(("Higgs_GenFirst_pt", "Higgs Gen First Pt; p_{T} [GeV]; Events", 50, 0., 500), "Higgs_GenFirst_pt")
@@ -225,6 +256,37 @@ h_Higgs_GenLast_eta.Draw()
 h_Higgs_GenLast_mass.Draw()
 #Gen-Level 2D
 h2_HiggsPt_GenFirst_GenLast.Draw()
+"""
+#---------------------------------------------------------------------------------------------------------#FatJet Histogram Module-------------------------------------------------------------------------------------------------------------------#
+#We'll define and save our FatJet histograms here.
+
+#Basic, on-shell histograms for ParT2 and ParT3.
+#Kinematics
+h_FatJet_4b_pt = rdf.Histo1D(("FatJet_4b_pt", "FatJet HtoAAto4b p_{t}; [GeV]; Events", 100, 100., 1000.), "FatJet_pt")
+h_FatJet_4b_eta = rdf.Histo1D(("FatJet_4b_eta", "FatJet HtoAAto4b eta; [#eta]; Events", 100, -7., 7.), "FatJet_eta")
+h_FatJet_4b_msoftdrop = rdf.Histo1D(("FatJet_4b_msoftdrop", "FatJet HtoAAto4b Soft Drop Mass; [GeV]; Events", 100, 20., 120.), "FatJet_msoftdrop")
+#Tagger Scores
+h_FatJet_4b_ParT2_3b = rdf.Histo1D(("FatJet_4b_ParT2_3b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT2 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_Normed")
+h_FatJet_4b_ParT2_4b = rdf.Histo1D(("FatJet_4b_ParT2_4b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT2 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_4b")
+h_FatJet_4b_ParT3_3b = rdf.Histo1D(("FatJet_4b_gl_ParT3_3b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT3 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_3b_Normed")
+h_FatJet_4b_ParT3_4b = rdf.Histo1D(("FatJet_4b_gl_ParT3_4b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT3 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b")
+
+"""
+#Additional Histograms including Off-Shell Z and Z*. ParT2 Type 1 and Type 2.
+h_FatJet_4b_ParT2_3b_1 = rdf.Histo1D(("FatJet_4b_ParT2_3b_1", "FatJet HtoAAto4b Tagger Score (ZZ*); ParT2 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_adv1")
+h_FatJet_4b_ParT2_4b_1 = rdf.Histo1D(("FatJet_4b_ParT2_4b_1", "FatJet HtoAAto4b Tagger Score (ZZ*); ParT2 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_4b_adv1")
+h_FatJet_4b_ParT2_3b_2 = rdf.Histo1D(("FatJet_4b_ParT2_3b_2", "FatJet HtoAAto4b Tagger Score (ZZ); ParT2 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_adv2")
+h_FatJet_4b_ParT2_4b_2 = rdf.Histo1D(("FatJet_4b_ParT2_4b_2", "FatJet HtoAAto4b Tagger Score (ZZ); ParT2 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_4b_adv2")
+
+#Additional Histograms including Off-Shell Z and Z*. ParT3 Type 1 and Type 2.
+h_FatJet_4b_ParT3_3b_1 = rdf.Histo1D(("FatJet_4b_ParT3_3b_1", "FatJet HtoAAto4b Tagger Score (ZZ*); ParT3 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_3b_adv1")
+h_FatJet_4b_ParT3_4b_1 = rdf.Histo1D(("FatJet_4b_ParT3_4b_1", "FatJet HtoAAto4b Tagger Score (ZZ*); ParT3 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b_adv1")
+h_FatJet_4b_ParT3_3b_2 = rdf.Histo1D(("FatJet_4b_ParT3_3b_2", "FatJet HtoAAto4b Tagger Score (ZZ); ParT3 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_3b_adv2")
+h_FatJet_4b_ParT3_4b_2 = rdf.Histo1D(("FatJet_4b_ParT3_4b_2", "FatJet HtoAAto4b Tagger Score (ZZ); ParT3 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b_adv2")
+"""
+
+
+
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -241,7 +303,7 @@ h2_HiggsPt_GenFirst_GenLast.Draw()
 #hist_gen_pt = rdf_with_rapidity.Histo1D(("gen_pt", "GenPart Pt;Pt [GeV];Counts", 100, 0, 100), "GenPart_pt")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-
+"""
 # Save the histogram
 outfile = ROOT.TFile("Higgs_Gen_HISTOS_RAW.root", "RECREATE")
 
@@ -260,3 +322,61 @@ h_Higgs_GenLast_mass.Write()
 h2_HiggsPt_GenFirst_GenLast.Write()
 
 outfile.Close()
+"""
+#--------------------------------------------------------------------------------------------------------------------------------------#Matplotlib Plotting Module----------------------------------------------------------------------------------------------------------------------------------------------#
+
+#We want to plot our variables using Matplotlib instead of the TCanvas protocol.
+
+#Convert TH1D to np.
+def th1_to_np(hist):
+    
+    nbins = hist.GetNbinsX()
+    edges = np.array([hist.GetBinLowEdge(i) for i in range(1, nbins + 2)], dtype=float)
+    contents = np.array([hist.GetBinContent(i) for i in range(1, nbins + 1)], dtype=float)
+    errors = np.array([hist.GetBinError(i) for i in range(1, nbins + 1)], dtype=float)
+
+    return edges, contents, errors
+
+
+#Plot FatJet pt Histogram
+#fat_jet_pt = h_FatJet_4b_pt.GetValue()
+#fat_jet_eta = h_FatJet_4b_eta.GetValue()
+fat_jet_4b_ParT2_3b = h_FatJet_4b_ParT2_3b.GetValue()
+entries = fat_jet_4b_ParT2_3b.GetEntries()
+
+
+#edges1, counts1, errors1 = th1_to_np(fat_jet_pt)
+#edges2, counts2, errors2 = th1_to_np(fat_jet_eta)
+edges, counts, errors = th1_to_np(fat_jet_4b_ParT2_3b)
+
+#fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 3))
+fig, ax = plt.subplots(figsize=(7,5))
+
+ax.stairs(counts, edges, label="FatJet HtoAAto4b M=30")
+ax.set_yscale('log')
+ax.set_xlabel("ParT2 bbb v QCD")
+ax.set_ylabel("Events")
+ax.set_title("FatJet HtoAAto4b M=30 (nBHadrons >= 4)")
+ax.text(.95,.95, f'Entries={int(entries)}')
+fig.tight_layout()
+fig.savefig("FJ_Haa4b_M30_ParT2_3b_nBHad_over_4.png", dpi=300)
+
+"""
+ax1.stairs(counts1, edges1, label="FatJet pT")
+
+ax1.set_xlabel("[GeV]")
+ax1.set_ylabel("Events")
+ax1.set_title(f"FatJet ParT $p_T$")
+ax1.legend()
+
+ax2.stairs(counts2, edges2, label="FatJet Eta")
+ax2.set_xlabel(f'[$\eta$]')
+ax2.set_ylabel(f'Events')
+ax2.set_title(f"FatJet ParT $\eta$")
+
+fig.tight_layout()
+fig.savefig("fat_jet_kinematic_test2.png", dpi=300)
+"""
+plt.close(fig)
+
+

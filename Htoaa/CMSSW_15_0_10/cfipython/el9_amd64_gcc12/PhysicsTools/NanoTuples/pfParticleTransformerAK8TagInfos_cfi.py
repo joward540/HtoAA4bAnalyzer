@@ -1,0 +1,5 @@
+import FWCore.ParameterSet.Config as cms
+
+from .ParticleTransformerAK8TagInfoProducer import ParticleTransformerAK8TagInfoProducer
+
+pfParticleTransformerAK8TagInfos = ParticleTransformerAK8TagInfoProducer()
