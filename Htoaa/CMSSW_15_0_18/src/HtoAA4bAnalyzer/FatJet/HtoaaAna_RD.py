@@ -145,12 +145,16 @@ rdf = rdf.Define("has4bScore", "getHas4bScoreMask(FatJet_genJetAK8Idx, GenJetAK8
          .Define("FatJet_4b_msoftdrop", "FatJet_msoftdrop[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_3b", "FatJet_globalParT2_probHZxZxbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_4b", "FatJet_globalParT2_probHZxZxbbbb[has4bScore]")\
+         .Define("FatJet_4b_gl_ParT2_b_channels","FatJet_globalParT2_probHZxZxbbb[has4bScore] + FatJet_globalParT2_probHZxZxbbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_QCD", "FatJet_globalParT2_probQCDb[has4bScore] + FatJet_globalParT2_probQCDbb[has4bScore] + FatJet_globalParT2_probQCDc[has4bScore] + FatJet_globalParT2_probQCDcc[has4bScore] + FatJet_globalParT2_probQCDothers[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_3b_Normed", "FatJet_4b_gl_ParT2_3b /(FatJet_4b_gl_ParT2_3b +  FatJet_4b_gl_ParT2_QCD)")\
+         .Define("FatJet_4b_gl_ParT2_4b_Normed", "FatJet_4b_gl_ParT2_4b /(FatJet_4b_gl_ParT2_4b +  FatJet_4b_gl_ParT2_QCD)")\
+         .Define("FatJet_4b_gl_ParT2_b_channels_Normed","FatJet_4b_gl_ParT2_b_channels / (FatJet_4b_gl_ParT2_b_channels + FatJet_4b_gl_ParT2_QCD)")\
          .Define("FatJet_4b_gl_ParT3_3b", "FatJet_globalParT3_probRawHZxZxbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT3_4b", "FatJet_globalParT3_probRawHZxZxbbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT3_QCD", "FatJet_globalParT3_QCD[has4bScore]")\
-         .Define("FatJet_4b_gl_ParT3_3b_Normed", "FatJet_4b_gl_ParT3_3b /(FatJet_4b_gl_ParT3_3b +  FatJet_4b_gl_ParT3_QCD)")
+         .Define("FatJet_4b_gl_ParT3_3b_Normed", "FatJet_4b_gl_ParT3_3b /(FatJet_4b_gl_ParT3_3b +  FatJet_4b_gl_ParT3_QCD)")\
+         .Define("FatJet_4b_gl_ParT3_4b_Normed", "FatJet_4b_gl_ParT3_4b /(FatJet_4b_gl_ParT3_4b +  FatJet_4b_gl_ParT3_QCD)")
 """
          .Define("FatJet_4b_gl_ParT2_3b_adv1", "FatJet_globalParT2_probHZxZxStarbbb[has4bScore]")\
          .Define("FatJet_4b_gl_ParT2_4b_adv1", "FatJet_globalParT2_probHZxZxStarbbbb[has4bScore]")\
@@ -265,11 +269,16 @@ h2_HiggsPt_GenFirst_GenLast.Draw()
 h_FatJet_4b_pt = rdf.Histo1D(("FatJet_4b_pt", "FatJet HtoAAto4b p_{t}; [GeV]; Events", 100, 100., 1000.), "FatJet_pt")
 h_FatJet_4b_eta = rdf.Histo1D(("FatJet_4b_eta", "FatJet HtoAAto4b eta; [#eta]; Events", 100, -7., 7.), "FatJet_eta")
 h_FatJet_4b_msoftdrop = rdf.Histo1D(("FatJet_4b_msoftdrop", "FatJet HtoAAto4b Soft Drop Mass; [GeV]; Events", 100, 20., 120.), "FatJet_msoftdrop")
-#Tagger Scores
+#Tagger Scores Signal
 h_FatJet_4b_ParT2_3b = rdf.Histo1D(("FatJet_4b_ParT2_3b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT2 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_Normed")
-h_FatJet_4b_ParT2_4b = rdf.Histo1D(("FatJet_4b_ParT2_4b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT2 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_4b")
+h_FatJet_4b_ParT2_4b = rdf.Histo1D(("FatJet_4b_ParT2_4b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT2 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_4b_Normed")
+h_FatJet_4b_ParT2_b_channels = rdf.Histo1D(("FatJet_4b_ParT2_b_channels", "FatJet HtoAAto4b Tagger Score (On-Shell); 3b + 4b v QCD; Events", 100, 0., 1.),"FatJet_4b_gl_ParT2_b_channels_Normed")
 h_FatJet_4b_ParT3_3b = rdf.Histo1D(("FatJet_4b_gl_ParT3_3b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT3 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_3b_Normed")
-h_FatJet_4b_ParT3_4b = rdf.Histo1D(("FatJet_4b_gl_ParT3_4b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT3 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b")
+h_FatJet_4b_ParT3_4b = rdf.Histo1D(("FatJet_4b_gl_ParT3_4b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT3 bbbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b_Normed")
+#Tagger Scores BG
+h_FatJet_4b_ParT2_3b = rdf.Histo1D(("FatJet_4b_ParT2_3b", "FatJet HtoAAto4b Tagger Score (On-Shell); ParT2 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_Normed")
+
+
 
 """
 #Additional Histograms including Off-Shell Z and Z*. ParT2 Type 1 and Type 2.
@@ -343,23 +352,25 @@ def th1_to_np(hist):
 #fat_jet_eta = h_FatJet_4b_eta.GetValue()
 fat_jet_4b_ParT2_3b = h_FatJet_4b_ParT2_3b.GetValue()
 entries = fat_jet_4b_ParT2_3b.GetEntries()
-
+fat_jet_4b_ParT2_b_channels = h_FatJet_4b_ParT2_b_channels.GetValue()
 
 #edges1, counts1, errors1 = th1_to_np(fat_jet_pt)
 #edges2, counts2, errors2 = th1_to_np(fat_jet_eta)
 edges, counts, errors = th1_to_np(fat_jet_4b_ParT2_3b)
+edges1, counts1, errors1 = th1_to_np(fat_jet_4b_ParT2_b_channels)
 
 #fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 3))
 fig, ax = plt.subplots(figsize=(7,5))
 
 ax.stairs(counts, edges, label="FatJet HtoAAto4b M=30")
+ax.stairs(counts1, edges1, color='b')
 ax.set_yscale('log')
-ax.set_xlabel("ParT2 bbb v QCD")
+ax.set_xlabel("ParT2 3b + 4b v QCD")
 ax.set_ylabel("Events")
 ax.set_title("FatJet HtoAAto4b M=30 (nBHadrons >= 4)")
 ax.text(.95,.95, f'Entries={int(entries)}')
 fig.tight_layout()
-fig.savefig("FJ_Haa4b_M30_ParT2_3b_nBHad_over_4.png", dpi=300)
+fig.savefig("FJ_Haa4b_M30_ParT2_b_channels_nBHad_over_4.png", dpi=300)
 
 """
 ax1.stairs(counts1, edges1, label="FatJet pT")

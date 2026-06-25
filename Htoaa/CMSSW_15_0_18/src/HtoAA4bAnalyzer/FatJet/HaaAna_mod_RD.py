@@ -48,6 +48,9 @@ samples = {
     },
 }
 
+#Directory for test run including off-shell variables.
+#/cms/data/juward/ana/Htoaa/CMSSW_15_0_10/src/PhysicsTools/NanoTuples
+
 
 #Let's load the files we want to analyze.
 def make_root_file_vector(file_list):
@@ -153,21 +156,21 @@ ROOT.gInterpreter.Declare("""
 #include "ROOT/RVec.hxx"
 #include <cstddef>
 
-ROOT::RVecI getHas4bScoreMask(const ROOT::RVecI& fatjet_genjet_idx,
-                              const ROOT::RVecI& genjet_nBHadrons) {
-    ROOT::RVecI mask(fatjet_genjet_idx.size(), 0);
+ROOT::RVec<std::size_t> get4bFatJetIdx(const ROOT::RVecI& FatJet_genJetAK8Idx,
+                                       const ROOT::RVecI& GenJetAK8_nBHadrons) {
+    ROOT::RVec<std::size_t> idxs;
 
-    for (std::size_t i = 0; i < fatjet_genjet_idx.size(); ++i) {
-        int idx = fatjet_genjet_idx[i];
+    for (std::size_t i = 0; i < FatJet_genJetAK8Idx.size(); ++i) {
+        int genIdx = FatJet_genJetAK8Idx[i];
 
-        if (idx >= 0 && static_cast<std::size_t>(idx) < genjet_nBHadrons.size()) {
-            if (genjet_nBHadrons[idx] >= 4) {
-                mask[i] = 1;
-            }
+        if (genIdx >= 0 &&
+            static_cast<std::size_t>(genIdx) < GenJetAK8_nBHadrons.size() &&
+            GenJetAK8_nBHadrons[genIdx] >= 0) {
+            idxs.push_back(i);
         }
     }
 
-    return mask;
+    return idxs;
 }
 """)
 
@@ -176,41 +179,41 @@ ROOT::RVecI getHas4bScoreMask(const ROOT::RVecI& fatjet_genjet_idx,
 def define_ParT_variables(rdf):
 
     #Define our nBhadrons mask using our helper function.
-    rdf = rdf.Define("has4bScore", "getHas4bScoreMask(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+    rdf = rdf.Define("FatJet_4b_idx", "get4bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
 
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_4b_pt", "FatJet_pt[has4bScore]")\
-             .Define("FatJet_4b_eta", "FatJet_eta[has4bScore]")\
-             .Define("FatJet_4b_msoftdrop", "FatJet_msoftdrop[has4bScore]")
+    rdf = rdf.Define("FatJet_4b_pt", "Take(FatJet_pt, FatJet_4b_idx)")\
+             .Define("FatJet_4b_eta", "Take(FatJet_eta, FatJet_4b_idx)")\
+             .Define("FatJet_4b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_4b_idx)")
 
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b", "FatJet_globalParT2_probHZxZxbbb[has4bScore]")\
-             .Define("FatJet_4b_gl_ParT2_4b", "FatJet_globalParT2_probHZxZxbbbb[has4bScore]")\
+    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT2_b_channels","FatJet_4b_gl_ParT2_3b + FatJet_4b_gl_ParT2_4b")\
-             .Define("FatJet_4b_gl_ParT2_QCD", "FatJet_globalParT2_probQCDb[has4bScore] + FatJet_globalParT2_probQCDbb[has4bScore] + FatJet_globalParT2_probQCDc[has4bScore] + FatJet_globalParT2_probQCDcc[has4bScore] + FatJet_globalParT2_probQCDothers[has4bScore]")\
+             .Define("FatJet_4b_gl_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT2_3b_Normed", "FatJet_4b_gl_ParT2_3b /(FatJet_4b_gl_ParT2_3b +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_4b_Normed", "FatJet_4b_gl_ParT2_4b /(FatJet_4b_gl_ParT2_4b +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_b_channels_Normed","FatJet_4b_gl_ParT2_b_channels / (FatJet_4b_gl_ParT2_b_channels + FatJet_4b_gl_ParT2_QCD)")
     
     #Define FatJet Tagger Scores for on-shell ParT3 variables.         
-    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b", "FatJet_globalParT3_probRawHZxZxbbb[has4bScore]")\
-             .Define("FatJet_4b_gl_ParT3_4b", "FatJet_globalParT3_probRawHZxZxbbbb[has4bScore]")\
+    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT3_b_channels","FatJet_4b_gl_ParT3_3b + FatJet_4b_gl_ParT3_4b")\
-             .Define("FatJet_4b_gl_ParT3_QCD", "FatJet_globalParT3_QCD[has4bScore]")\
+             .Define("FatJet_4b_gl_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT3_3b_Normed", "FatJet_4b_gl_ParT3_3b /(FatJet_4b_gl_ParT3_3b +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_4b_Normed", "FatJet_4b_gl_ParT3_4b /(FatJet_4b_gl_ParT3_4b +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_b_channels_Normed","FatJet_4b_gl_ParT3_b_channels / (FatJet_4b_gl_ParT3_b_channels + FatJet_4b_gl_ParT3_QCD)")
 
     """
     #Define FatJet Tagger Scores for including off-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b_adv1", "FatJet_globalParT2_probHZxZxStarbbb[has4bScore]")\
-             .Define("FatJet_4b_gl_ParT2_4b_adv1", "FatJet_globalParT2_probHZxZxStarbbbb[has4bScore]")\
+    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b_adv1", "Take(FatJet_globalParT2_probHZxZxStarbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_4b_adv1", "Take(FatJet_globalParT2_probHZxZxStarbbbb, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT2_b_channels_adv1","FatJet_4b_gl_ParT2_3b_adv1 + FatJet_4b_gl_ParT2_4b_adv1")\
              .Define("FatJet_4b_gl_ParT2_3b_adv1_Normed", "FatJet_4b_gl_ParT2_3b_adv1 /(FatJet_4b_gl_ParT2_3b_adv1 +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_4b_adv1_Normed", "FatJet_4b_gl_ParT2_4b_adv1 /(FatJet_4b_gl_ParT2_4b_adv1 +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_b_channels_adv1_Normed","FatJet_4b_gl_ParT2_b_channels / (FatJet_4b_gl_ParT2_b_channels_adv1 + FatJet_4b_gl_ParT2_QCD)")\
-             .Define("FatJet_4b_gl_ParT2_3b_adv2", "FatJet_globalParT2_probHZZbbb[has4bScore]")\
-             .Define("FatJet_4b_gl_ParT2_4b_adv2", "FatJet_globalParT2_probHZZbbbb[has4bScore]")\
+             .Define("FatJet_4b_gl_ParT2_3b_adv2", "Take(FatJet_globalParT2_probHZZbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_4b_adv2", "Take(FatJet_globalParT2_probHZZbbbb, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT2_b_channels_adv2","FatJet_4b_gl_ParT2_3b_adv2 + FatJet_4b_gl_ParT2_4b_adv2")\
              .Define("FatJet_4b_gl_ParT2_3b_adv2_Normed", "FatJet_4b_gl_ParT2_3b_adv2 /(FatJet_4b_gl_ParT2_3b_adv2 +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_4b_adv2_Normed", "FatJet_4b_gl_ParT2_4b_adv2 /(FatJet_4b_gl_ParT2_4b_adv2 +  FatJet_4b_gl_ParT2_QCD)")\
@@ -218,14 +221,14 @@ def define_ParT_variables(rdf):
          
 
     #Define FatJet Tagger Scores for including off-shell ParT3 variables.
-    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b_adv1", "FatJet_globalParT3_probRawHZxZxStarbbb[has4bScore]")\
-             .Define("FatJet_4b_gl_ParT3_4b_adv1", "FatJet_globalParT3_probRawHZxZxStarbbbb[has4bScore]")\
+    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b_adv1", "Take(FatJet_globalParT3_probRawHZxZxStarbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_4b_adv1", "Take(FatJet_globalParT3_probRawHZxZxStarbbbb, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT3_b_channels_adv1","FatJet_4b_gl_ParT3_3b_adv1 + FatJet_4b_gl_ParT3_4b_adv1")\
              .Define("FatJet_4b_gl_ParT3_3b_adv1_Normed", "FatJet_4b_gl_ParT3_3b_adv1 /(FatJet_4b_gl_ParT3_3b_adv1 +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_4b_adv1_Normed", "FatJet_4b_gl_ParT3_4b_adv1 /(FatJet_4b_gl_ParT3_4b_adv1 +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_b_channels_adv1_Normed","FatJet_4b_gl_ParT3_b_channels / (FatJet_4b_gl_ParT3_b_channels_adv1 + FatJet_4b_gl_ParT3_QCD)")\
-             .Define("FatJet_4b_gl_ParT3_3b_adv2", "FatJet_globalParT3_probRawHZZbbb[has4bScore]")\
-             .Define("FatJet_4b_gl_ParT3_4b_adv2", "FatJet_globalParT3_probRawHZZbbbb[has4bScore]")\
+             .Define("FatJet_4b_gl_ParT3_3b_adv2", "Take(FatJet_globalParT3_probRawHZZbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_4b_adv2", "Take(FatJet_globalParT3_probRawHZZbbbb, FatJet_4b_idx)")\
              .Define("FatJet_4b_gl_ParT3_b_channels_adv2","FatJet_4b_gl_ParT3_3b_adv2 + FatJet_4b_gl_ParT3_4b_adv2")\
              .Define("FatJet_4b_gl_ParT3_3b_adv2_Normed", "FatJet_4b_gl_ParT3_3b_adv2 /(FatJet_4b_gl_ParT3_3b_adv2 +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_4b_adv2_Normed", "FatJet_4b_gl_ParT3_4b_adv2 /(FatJet_4b_gl_ParT3_4b_adv2 +  FatJet_4b_gl_ParT3_QCD)")\
@@ -331,9 +334,6 @@ def book_histograms(rdf, sample_name, label):
 
 
 
-
-
-
 """
 #Additional Histograms including Off-Shell Z and Z*. ParT2 Type 1 and Type 2.
 h_FatJet_4b_ParT2_3b_1 = rdf.Histo1D(("FatJet_4b_ParT2_3b_1", "FatJet HtoAAto4b Tagger Score (ZZ*); ParT2 bbb v QCD; Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_adv1")
@@ -356,6 +356,9 @@ for sample_name, rdf in rdf_defined.items():
         sample_name,
         samples[sample_name]["label"]
     )
+
+
+
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -431,7 +434,7 @@ def single_hist_plotter(histogram, label, xlabel, title, output_name):
         f"Entries = {int(entries)}",
         transform=ax.transAxes,
         ha="right",
-        va="top"
+        va="center"
     )
 
     fig.tight_layout()
@@ -475,17 +478,105 @@ def plot_overlay(histos, samples, sample_names, hist_name, xlabel, title, output
 
 
 
+#---------------------------------------------------------------------------------------------------Main----------------------------------------------------------------------------------------------------#
 
-
-
+single_hist_plotter(
+    histos["QCD0B"]["ParT3_3b"],
+    samples["QCD0B"]["label"],
+    "Test ParT3 bbb / (bbb + QCD) (GenJetAK8_nBHadrons >= 0)",
+    "FatJet HtoAAto4b QCD0B HT 800-1000",
+    "Test_5_QCD0B_ParT3_3b.png"
+)
+"""
 
 plot_overlay(
     histos=histos,
     samples=samples,
-    sample_names=["M30", "QCDB"],
-    hist_name="ParT2_b_channels",
-    xlabel="ParT2 3b + 4b v QCD",
-    title="ParT2 score comparison",
-    output_name="overlay_ParT2_b_channels.png",
+    sample_names=["M30", "M35", "QCDB", "QCD0B"],
+    hist_name="ParT3_3b",
+    xlabel="ParT3 bbb / (bbb + QCD)",
+    title="ParT3 M30 v M35 v QCDB v QCD0B",
+    output_name="overlay_ParT3_3b_all_datasets.png",
     normalize=False
 )
+
+
+plot_dir = Path("plots")
+plot_dir.mkdir(exist_ok=True)
+
+signals = ["M30", "M35"]
+backgrounds = ["QCD0B", "QCDB"]
+all_samples = signals + backgrounds
+
+hist_names = [
+    "ParT2_3b",
+    "ParT2_4b",
+    "ParT2_b_channels",
+    "ParT3_3b",
+    "ParT3_4b",
+    "ParT3_b_channels",
+]
+
+hist_xlabels = {
+    "ParT2_3b": "ParT2 bbb v QCD",
+    "ParT2_4b": "ParT2 bbbb v QCD",
+    "ParT2_b_channels": "ParT2 3b + 4b v QCD",
+    "ParT3_3b": "ParT3 bbb v QCD",
+    "ParT3_4b": "ParT3 bbbb v QCD",
+    "ParT3_b_channels": "ParT3 3b + 4b v QCD",
+}
+
+
+# Make individual plots for every sample.
+for hist_name in hist_names:
+    for sample_name in all_samples:
+
+        if sample_name not in histos:
+            #print(f"Skipping {sample_name}: no histograms found")
+            continue
+
+        if hist_name not in histos[sample_name]:
+            #print(f"Skipping {sample_name} {hist_name}: histogram not found")
+            continue
+
+        output_name = plot_dir / f"{sample_name}_{hist_name}.png"
+
+        single_hist_plotter(
+            histogram=histos[sample_name][hist_name],
+            label=samples[sample_name]["label"],
+            xlabel=hist_xlabels[hist_name],
+            title=f"{samples[sample_name]['label']} {hist_name}",
+            output_name=str(output_name)
+        )
+
+
+# Plot all signals vs all backgrounds.
+for hist_name in hist_names:
+    for signal_name in signals:
+        for background_name in backgrounds:
+
+            sample_pair = [signal_name, background_name]
+
+            # Safety check
+            missing = [
+                sample_name for sample_name in sample_pair
+                if sample_name not in histos or hist_name not in histos[sample_name]
+            ]
+
+            if missing:
+                #print(f"Skipping overlay {hist_name} for {sample_pair}. Missing: {missing}")
+                continue
+
+            output_name = plot_dir / f"overlay_{signal_name}_vs_{background_name}_{hist_name}.png"
+
+            plot_overlay(
+                histos=histos,
+                samples=samples,
+                sample_names=sample_pair,
+                hist_name=hist_name,
+                xlabel=hist_xlabels[hist_name],
+                title=f"{hist_name}: {signal_name} vs {background_name}",
+                output_name=str(output_name),
+                normalize=False
+            )
+"""
