@@ -12,4 +12,4 @@ export PYTHONNOUSERSITE=1
 
 
 cd /cms/data/juward/ana/Htoaa/CMSSW_15_0_18/src/HtoAA4bAnalyzer/FatJet
-python3 ./HaaAna_mod_RD.py .
+python3 -s ./HaaAna_mod_RD.py 

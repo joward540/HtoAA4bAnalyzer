@@ -1,10 +1,9 @@
 import ROOT
 import numpy as np
-import scipy as sp
-import matplotlib.pyplot as plt
 import os
 import glob
 from pathlib import Path
+import argparse
 
 # Enable multi-threading
 #ROOT.ROOT.EnableImplicitMT()
@@ -48,6 +47,21 @@ samples = {
     },
 }
 
+#This will allow us to make an argument after calling the script. If we don't include an argument, we'll run for all datasets. If we do include it, we'll only run for one dataset.
+parser = argparse.ArgumentParser(description="Make FatJet histograms for HtoAA samples.")
+
+parser.add_argument("dataset", nargs="?", choices=list(samples.keys()), help="Optional dataset to run: M30, M35, QCD0B, or QCDB. If omitted, all datasets run.")
+parser.add_argument("--max-files", type=int, default=None, help="Maximumn number of ROOT files to use per dataset for testing.")
+
+args = parser.parse_args()
+
+if args.dataset is None:
+    samples_to_run = samples
+else:
+    samples_to_run = {args.dataset: samples[args.dataset]}
+
+
+
 #Directory for test run including off-shell variables.
 #/cms/data/juward/ana/Htoaa/CMSSW_15_0_10/src/PhysicsTools/NanoTuples
 
@@ -61,32 +75,70 @@ def make_root_file_vector(file_list):
 
     return files_vec
 
+#This should help us when a root file is bad/doesnt contain our desired variables. (Example QCD0B has no 'Events' in TTree).
+def file_has_tree(filename, tree_name="Events"):
+    f = ROOT.TFile.Open(str(filename), "READ")
 
-def get_files_for_sample(parent_dir, sample_info, max_files=None):
+    if not f or f.IsZombie():
+        return False
+
+    obj = f.Get(tree_name)
+    ok = bool(obj) and obj.InheritsFrom("TTree")
+
+    f.Close()
+    return ok
+
+
+#This is how we'll read in our datasets.
+def get_files_for_sample(parent_dir, sample_name, sample_info, max_files=None, log_dir="logs"):
     sample_dir = parent_dir / sample_info["subdir"]
 
     if not sample_dir.is_dir():
-        print(f"Warning: missing directory: {sample_dir}")
+        log_dir = Path(log_dir)
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(log_dir / "missing_sample_dirs.txt", "a") as out:
+            out.write(f"{sample_name}: {sample_dir}\n")
+
         return []
 
-    files = sorted(sample_dir.glob(sample_info["pattern"]))
+    all_files = sorted(sample_dir.glob(sample_info["pattern"]))
 
     if max_files is not None:
-        files = files[:max_files]
+        all_files = all_files[:max_files]
 
-    return [str(f) for f in files]
+    good_files = []
+    bad_files = []
+
+    for f in all_files:
+        if file_has_tree(f, "Events"):
+            good_files.append(str(f))
+        else:
+            bad_files.append(str(f))
+
+    if bad_files:
+        log_dir = Path(log_dir)
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        bad_file_log = log_dir / f"bad_files_{sample_name}.txt"
+
+        with open(bad_file_log, "w") as out:
+            for bad in bad_files:
+                out.write(bad + "\n")
+
+        print(f"Warning: {sample_name} has bad/missing-Events files. See {bad_file_log}")
+
+    return good_files
 
 
 #Make one RDataFrame per sample.
 sample_files = {}
 sample_rdf = {}
 
-for sample_name, info in samples.items():
-    files = get_files_for_sample(input_dir, info)
+for sample_name, info in samples_to_run.items():
+    files = get_files_for_sample(input_dir, sample_name, info, max_files=args.max_files, log_dir="logs")
 
     sample_files[sample_name] = files
-
-   # print(f"{sample_name}: found {len(files)} files")
 
     if len(files) == 0:
         continue
@@ -94,6 +146,7 @@ for sample_name, info in samples.items():
     files_vec = make_root_file_vector(files)
 
     sample_rdf[sample_name] = ROOT.RDataFrame("Events", files_vec)
+
 
 #-----------------------------------------------------------------------------#Legacy File Load (Single File)------------------------------------------------------------------------------#
 
@@ -165,7 +218,7 @@ ROOT::RVec<std::size_t> get4bFatJetIdx(const ROOT::RVecI& FatJet_genJetAK8Idx,
 
         if (genIdx >= 0 &&
             static_cast<std::size_t>(genIdx) < GenJetAK8_nBHadrons.size() &&
-            GenJetAK8_nBHadrons[genIdx] >= 0) {
+            GenJetAK8_nBHadrons[genIdx] >= 4) {
             idxs.push_back(i);
         }
     }
@@ -178,31 +231,57 @@ ROOT::RVec<std::size_t> get4bFatJetIdx(const ROOT::RVecI& FatJet_genJetAK8Idx,
 #Let's set up a mask to make sure we only investigate events with some tagger score in the desired final state. "FatJet_pt > 300" getHas4bScoreMask(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
 def define_ParT_variables(rdf):
 
-    #Define our nBhadrons mask using our helper function.
-    rdf = rdf.Define("FatJet_4b_idx", "get4bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
-
+    #Define varibles with no cuts applied. 
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_4b_pt", "Take(FatJet_pt, FatJet_4b_idx)")\
-             .Define("FatJet_4b_eta", "Take(FatJet_eta, FatJet_4b_idx)")\
-             .Define("FatJet_4b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_4b_idx)")
+    rdf = rdf.Define("FatJet_4b_pt", "FatJet_pt")\
+             .Define("FatJet_4b_eta", "FatJet_eta")\
+             .Define("FatJet_4b_msoftdrop", "FatJet_msoftdrop")
 
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_4b_idx)")\
-             .Define("FatJet_4b_gl_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_4b_idx)")\
+    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b", "FatJet_globalParT2_probHZxZxbbb")\
+             .Define("FatJet_4b_gl_ParT2_4b", "FatJet_globalParT2_probHZxZxbbbb")\
              .Define("FatJet_4b_gl_ParT2_b_channels","FatJet_4b_gl_ParT2_3b + FatJet_4b_gl_ParT2_4b")\
-             .Define("FatJet_4b_gl_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_QCD", "FatJet_globalParT2_probQCDb + FatJet_globalParT2_probQCDbb + FatJet_globalParT2_probQCDc + FatJet_globalParT2_probQCDcc + FatJet_globalParT2_probQCDothers")\
              .Define("FatJet_4b_gl_ParT2_3b_Normed", "FatJet_4b_gl_ParT2_3b /(FatJet_4b_gl_ParT2_3b +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_4b_Normed", "FatJet_4b_gl_ParT2_4b /(FatJet_4b_gl_ParT2_4b +  FatJet_4b_gl_ParT2_QCD)")\
              .Define("FatJet_4b_gl_ParT2_b_channels_Normed","FatJet_4b_gl_ParT2_b_channels / (FatJet_4b_gl_ParT2_b_channels + FatJet_4b_gl_ParT2_QCD)")
-    
-    #Define FatJet Tagger Scores for on-shell ParT3 variables.         
-    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_4b_idx)")\
-             .Define("FatJet_4b_gl_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_4b_idx)")\
+
+    #Define FatJet Tagger Scores for on-shell ParT3 variables.
+    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b", "FatJet_globalParT3_probRawHZxZxbbb")\
+             .Define("FatJet_4b_gl_ParT3_4b", "FatJet_globalParT3_probRawHZxZxbbbb")\
              .Define("FatJet_4b_gl_ParT3_b_channels","FatJet_4b_gl_ParT3_3b + FatJet_4b_gl_ParT3_4b")\
-             .Define("FatJet_4b_gl_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_QCD", "FatJet_globalParT3_QCD")\
              .Define("FatJet_4b_gl_ParT3_3b_Normed", "FatJet_4b_gl_ParT3_3b /(FatJet_4b_gl_ParT3_3b +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_4b_Normed", "FatJet_4b_gl_ParT3_4b /(FatJet_4b_gl_ParT3_4b +  FatJet_4b_gl_ParT3_QCD)")\
              .Define("FatJet_4b_gl_ParT3_b_channels_Normed","FatJet_4b_gl_ParT3_b_channels / (FatJet_4b_gl_ParT3_b_channels + FatJet_4b_gl_ParT3_QCD)")
+
+
+
+    #Define varibales with nbHadrons cut.
+    rdf = rdf.Define("FatJet_4b_idx", "get4bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+ 
+    #Define FatJet kinematics
+    rdf = rdf.Define("FatJet_4b_pt_cut", "Take(FatJet_pt, FatJet_4b_idx)")\
+             .Define("FatJet_4b_eta_cut", "Take(FatJet_eta, FatJet_4b_idx)")\
+             .Define("FatJet_4b_msoftdrop_cut", "Take(FatJet_msoftdrop, FatJet_4b_idx)")
+
+    #Define FatJet Tagger Scores for on-shell ParT2 variables.
+    rdf = rdf.Define("FatJet_4b_gl_ParT2_3b_cut", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_4b_cut", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_b_channels_cut","FatJet_4b_gl_ParT2_3b_cut + FatJet_4b_gl_ParT2_4b_cut")\
+             .Define("FatJet_4b_gl_ParT2_QCD_cut", "Take(FatJet_globalParT2_probQCDb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT2_3b_Normed_cut", "FatJet_4b_gl_ParT2_3b_cut /(FatJet_4b_gl_ParT2_3b_cut +  FatJet_4b_gl_ParT2_QCD_cut)")\
+             .Define("FatJet_4b_gl_ParT2_4b_Normed_cut", "FatJet_4b_gl_ParT2_4b_cut /(FatJet_4b_gl_ParT2_4b_cut +  FatJet_4b_gl_ParT2_QCD_cut)")\
+             .Define("FatJet_4b_gl_ParT2_b_channels_Normed_cut","FatJet_4b_gl_ParT2_b_channels_cut / (FatJet_4b_gl_ParT2_b_channels_cut + FatJet_4b_gl_ParT2_QCD_cut)")
+    
+    #Define FatJet Tagger Scores for on-shell ParT3 variables.         
+    rdf = rdf.Define("FatJet_4b_gl_ParT3_3b_cut", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_4b_cut", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_b_channels_cut","FatJet_4b_gl_ParT3_3b_cut + FatJet_4b_gl_ParT3_4b_cut")\
+             .Define("FatJet_4b_gl_ParT3_QCD_cut", "Take(FatJet_globalParT3_QCD, FatJet_4b_idx)")\
+             .Define("FatJet_4b_gl_ParT3_3b_Normed_cut", "FatJet_4b_gl_ParT3_3b_cut /(FatJet_4b_gl_ParT3_3b_cut +  FatJet_4b_gl_ParT3_QCD_cut)")\
+             .Define("FatJet_4b_gl_ParT3_4b_Normed_cut", "FatJet_4b_gl_ParT3_4b_cut /(FatJet_4b_gl_ParT3_4b_cut +  FatJet_4b_gl_ParT3_QCD_cut)")\
+             .Define("FatJet_4b_gl_ParT3_b_channels_Normed_cut","FatJet_4b_gl_ParT3_b_channels_cut / (FatJet_4b_gl_ParT3_b_channels_cut + FatJet_4b_gl_ParT3_QCD_cut)")
 
     """
     #Define FatJet Tagger Scores for including off-shell ParT2 variables.
@@ -328,6 +407,20 @@ def book_histograms(rdf, sample_name, label):
     histos["ParT3_3b"] = rdf.Histo1D((f"h_{sample_name}_ParT3_3b", f"{label};ParT3 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_3b_Normed")
     histos["ParT3_4b"] = rdf.Histo1D((f"h_{sample_name}_ParT3_4b", f"{label};ParT3 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b_Normed")
     histos["ParT3_b_channels"] = rdf.Histo1D((f"h_{sample_name}_ParT3_b_channels", f"{label};ParT3 3b + 4b / (3b + 4b + QCD);Events", 100, 0., 1.),"FatJet_4b_gl_ParT3_b_channels_Normed")
+
+    #Selection-Cut Histograms
+    #Kinematics
+    histos["pt_cut"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_pt_cut", f"{label} nBHad >= 4;FatJet p_{{T}} [GeV];Events", 100, 100., 1000.), "FatJet_4b_pt_cut")
+    histos["eta_cut"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_eta_cut", f"{label} nBHad >= 4;FatJet #eta;Events", 100, -7., 7.), "FatJet_4b_eta_cut")
+    histos["msoftdrop_cut"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_msoftdrop_cut", f"{label} nBHad >= 4;Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_4b_msoftdrop_cut")
+
+    #On-Shell Tagger Scores
+    histos["ParT2_3b_cut"] = rdf.Histo1D((f"h_{sample_name}_ParT2_3b_cut", f"{label} nBHad >= 4;ParT2 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_3b_Normed_cut")
+    histos["ParT2_4b_cut"] = rdf.Histo1D((f"h_{sample_name}_ParT2_4b_cut", f"{label} nBHad >= 4;ParT2 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_4b_gl_ParT2_4b_Normed_cut")
+    histos["ParT2_b_channels_cut"] = rdf.Histo1D((f"h_{sample_name}_ParT2_b_channels_cut", f"{label} nBHad >= 4;ParT2 3b + 4b / (3b + 4b + QCD);Events", 100, 0., 1.),"FatJet_4b_gl_ParT2_b_channels_Normed_cut")
+    histos["ParT3_3b_cut"] = rdf.Histo1D((f"h_{sample_name}_ParT3_3b_cut", f"{label} nBHad >= 4;ParT3 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_3b_Normed_cut")
+    histos["ParT3_4b_cut"] = rdf.Histo1D((f"h_{sample_name}_ParT3_4b_cut", f"{label} nBHad >= 4;ParT3 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_4b_gl_ParT3_4b_Normed_cut")
+    histos["ParT3_b_channels_cut"] = rdf.Histo1D((f"h_{sample_name}_ParT3_b_channels_cut", f"{label} nBHad >= 4;ParT3 3b + 4b / (3b + 4b + QCD);Events", 100, 0., 1.),"FatJet_4b_gl_ParT3_b_channels_Normed_cut")
     
 
     return histos
@@ -380,14 +473,10 @@ h_FatJet_4b_ParT3_4b_2 = rdf.Histo1D(("FatJet_4b_ParT3_4b_2", "FatJet HtoAAto4b 
 histos = {}
 
 for sample_name, rdf in rdf_defined.items():
-    histos[sample_name] = book_histograms(
-        rdf,
-        sample_name,
-        samples[sample_name]["label"]
-    )
+    histos[sample_name] = book_histograms(rdf, sample_name, samples[sample_name]["label"])
 
 #Finally, we'll save them.
-save_histograms(histos, output_dir="histograms")
+save_histograms(histos, output_dir="compariston_histograms")
 
 
 
