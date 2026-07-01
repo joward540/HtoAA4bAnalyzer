@@ -17,7 +17,7 @@ def clean_name(name):
 def sample_name_from_file(path):
     stem = Path(path).stem
 
-    prefixes = ["FatJet_Histograms_", "Histograms_", "histograms_", "test_histograms", "test_histgrams_2", "combined_histograms"]
+    prefixes = ["FatJet_Histograms_", "Histograms_", "histograms_", "test_histograms", "test_histgrams_2", "combined_histograms", "nBHad0_histgrams", "nBHad1_histograms", "nBHad2_histgrams", "nBHad4_histgrams"]
 
     for prefix in prefixes:
         if stem.startswith(prefix):
@@ -269,10 +269,11 @@ def plot_overlay_1d(histos, plot_dir):
 
         fig.tight_layout()
 
-        output_name = overlay_dir / f"overlay_{clean_name(hist_name)}.png"
+        output_name = overlay_dir / f"overlay_{clean_name(sample_name)}_{clean_name(hist_name)}.png"
         fig.savefig(output_name, dpi=300)
         plt.close(fig)
 
+"""
 def plot_1d_comparison(histos, plot_dir):
     compare_dir = Path(plot_dir) / "comparisons"
     compare_dir.mkdir(parents=True, exist_ok=True)
@@ -313,6 +314,70 @@ def plot_1d_comparison(histos, plot_dir):
 
         fig.savefig(output_name, dpi=300)
         plt.close(fig) 
+"""
+
+def plot_1d_comparison(histos, plot_dir):
+    compare_dir = Path(plot_dir) / "comparisons"
+    compare_dir.mkdir(parents=True, exist_ok=True)
+
+    for sample_name, sample_histos in histos.items():
+
+        hist_list = []
+
+        # Build the list first
+        for hist_name, record in sample_histos.items():
+            if record["dim"] != 1:
+                continue
+
+            hist_list.append((hist_name, record["hist"]))
+
+        if len(hist_list) < 2:
+            continue
+
+        # Optional: put uncut first and _cut second
+        hist_list = sorted(hist_list, key=lambda x: x[0].endswith("_cut"))
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+
+        for hist_name, hist in hist_list:
+            edges, counts, _ = th1_to_np(hist)
+
+            if hist_name.endswith("_cut"):
+                linestyle = "--"
+                linewidth = 2.5
+                zorder = 3
+            else:
+                linestyle = "-"
+                linewidth = 2.0
+                zorder = 2
+
+            ax.stairs(
+                counts,
+                edges,
+                label=hist_name,
+                fill=False,
+                linestyle=linestyle,
+                linewidth=linewidth,
+                zorder=zorder
+            )
+
+        xlabel = hist_list[0][1].GetXaxis().GetTitle()
+
+        if xlabel:
+            ax.set_xlabel(xlabel)
+
+        ax.set_yscale("log")
+        ax.set_ylabel("Events")
+        ax.set_title(f"{sample_name}: histogram comparison")
+        ax.legend()
+
+        fig.tight_layout()
+
+        compared_names = "_vs_".join(clean_name(name) for name, _ in hist_list)
+        output_name = compare_dir / f"compare_{clean_name(sample_name)}_{compared_names}.png"
+
+        fig.savefig(output_name, dpi=300)
+        plt.close(fig)
 
 
 def main():

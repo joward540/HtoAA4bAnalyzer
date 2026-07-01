@@ -476,7 +476,7 @@ for sample_name, rdf in rdf_defined.items():
     histos[sample_name] = book_histograms(rdf, sample_name, samples[sample_name]["label"])
 
 #Finally, we'll save them.
-save_histograms(histos, output_dir="compariston_histograms")
+save_histograms(histos, output_dir="nBHad4_histograms")
 
 
 
