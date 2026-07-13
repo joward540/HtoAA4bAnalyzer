@@ -17,7 +17,7 @@ def clean_name(name):
 def sample_name_from_file(path):
     stem = Path(path).stem
 
-    prefixes = ["FatJet_Histograms_", "Histograms_", "histograms_", "test_histograms", "test_histgrams_2", "combined_histograms", "nBHad0_histgrams", "nBHad1_histograms", "nBHad2_histgrams", "nBHad4_histgrams"]
+    prefixes = ["FatJet_Histograms_", "Histograms_", "histograms_", "test_histograms", "test_histgrams_2", "combined_histograms", "nBHad0_histgrams", "nBHad1_histograms", "nBHad2_histograms", "nBHad4_histograms", "nBHadron_cut_histograms"]
 
     for prefix in prefixes:
         if stem.startswith(prefix):
@@ -269,7 +269,12 @@ def plot_overlay_1d(histos, plot_dir):
 
         fig.tight_layout()
 
-        output_name = overlay_dir / f"overlay_{clean_name(sample_name)}_{clean_name(hist_name)}.png"
+        sample_names = [sample_name for sample_name, _ in hist_list]
+        sample_tag = "_vs_".join(clean_name(name) for name in sample_names)
+
+        output_name = overlay_dir / f"overlay_{sample_tag}_{clean_name(hist_name)}.png"
+
+        #output_name = overlay_dir / f"overlay_{clean_name(sample_name)}_{clean_name(hist_name)}.png"
         fig.savefig(output_name, dpi=300)
         plt.close(fig)
 
