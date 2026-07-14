@@ -52,7 +52,11 @@ def th1_to_np(hist):
 
     errors = np.array([hist.GetBinError(i) for i in range(1, nbins + 1)], dtype=float)
 
-    return edges, counts, errors
+    integral = hist.Integral()
+
+    normed_weights = counts / integral
+
+    return edges, counts, errors, normed_weights
 
 def th2_to_np(hist):
     nx = hist.GetNbinsX()
@@ -157,12 +161,12 @@ def read_histograms(hist_dirs, requested_hists=None, requested_dim="1", requeste
 
 #This is how we'll make our plots. 
 def plot_1d(hist, sample_name, hist_name, output_path):
-    edges, counts, _ = th1_to_np(hist)
+    edges, counts, _, normed_weights = th1_to_np(hist)
     entries = hist.GetEntries()
 
     fig, ax = plt.subplots(figsize=(7, 5))
 
-    ax.stairs(counts, edges, label=hist_label(hist, sample_name))
+    ax.stairs(normed_weights, edges, label=hist_label(hist, sample_name))
 
     ax.set_yscale("log")
     ax.set_xlabel(axis_title(hist.GetXaxis(), hist_name))
@@ -254,8 +258,8 @@ def plot_overlay_1d(histos, plot_dir):
             continue
 
         for sample_name, hist in hist_list:
-            edges, counts, _ = th1_to_np(hist)
-            ax.stairs(counts, edges, label=sample_name)
+            edges, counts, _, normed_weights = th1_to_np(hist)
+            ax.stairs(normed_weights, edges, label=sample_name)
 
         xlabel = hist_list[0][1].GetXaxis().GetTitle()
 
@@ -264,7 +268,7 @@ def plot_overlay_1d(histos, plot_dir):
 
         ax.set_yscale("log")
         ax.set_ylabel("Events")
-        ax.set_title(hist_name)
+        ax.set_title(f"{hist_name} (Normalized)")
         ax.legend()
 
         fig.tight_layout()
@@ -277,6 +281,9 @@ def plot_overlay_1d(histos, plot_dir):
         #output_name = overlay_dir / f"overlay_{clean_name(sample_name)}_{clean_name(hist_name)}.png"
         fig.savefig(output_name, dpi=300)
         plt.close(fig)
+
+
+
 def plot_1d_comparison(histos, plot_dir):
     compare_dir = Path(plot_dir) / "comparisons"
     compare_dir.mkdir(parents=True, exist_ok=True)
@@ -301,7 +308,7 @@ def plot_1d_comparison(histos, plot_dir):
         fig, ax = plt.subplots(figsize=(7, 5))
 
         for hist_name, hist in hist_list:
-            edges, counts, _ = th1_to_np(hist)
+            edges, counts, _, normed_weights = th1_to_np(hist)
 
             if hist_name.endswith("_cut"):
                 linestyle = "--"
@@ -313,7 +320,7 @@ def plot_1d_comparison(histos, plot_dir):
                 zorder = 2
 
             ax.stairs(
-                counts,
+                normed_weights,
                 edges,
                 label=hist_name,
                 fill=False,
