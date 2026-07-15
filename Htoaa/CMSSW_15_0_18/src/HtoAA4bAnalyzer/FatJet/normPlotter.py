@@ -43,7 +43,17 @@ def hist_dimension(obj):
 
 #We'll need to convert ROOT histograms to numpy objects.
 
-def th1_to_np(hist):
+def sample_key_from_label(plot_label):
+    # "nBH_cut_histograms:M30" -> "M30"
+    return str(plot_label).rsplit(":", 1)[-1]
+
+weights = {"QCD0B": 0.480723, 
+           "QCDB": 0.615936, 
+           "M30": 72416000, 
+           "M35": 152346400
+           }
+
+def th1_to_np(hist, sample_name):
     nbins = hist.GetNbinsX()
 
     edges = np.array([hist.GetBinLowEdge(i) for i in range(1, nbins + 2)], dtype=float)
@@ -52,11 +62,13 @@ def th1_to_np(hist):
 
     errors = np.array([hist.GetBinError(i) for i in range(1, nbins + 1)], dtype=float)
 
-    integral = hist.Integral()
+    sample_key = sample_key_from_label(sample_name)
 
-    normed_weights = counts / integral
+    hist_weight = weights[clean_name(sample_key)]
 
-    return edges, counts, errors, normed_weights
+    weighted_counts = counts * hist_weight
+
+    return edges, counts, errors, weighted_counts
 
 def th2_to_np(hist):
     nx = hist.GetNbinsX()
@@ -161,12 +173,12 @@ def read_histograms(hist_dirs, requested_hists=None, requested_dim="1", requeste
 
 #This is how we'll make our plots. 
 def plot_1d(hist, sample_name, hist_name, output_path):
-    edges, counts, _, normed_weights = th1_to_np(hist)
+    edges, counts, _, weighted_counts = th1_to_np(hist, sample_name)
     entries = hist.GetEntries()
 
     fig, ax = plt.subplots(figsize=(7, 5))
 
-    ax.stairs(normed_weights, edges, label=hist_label(hist, sample_name))
+    ax.stairs(weighted_counts, edges, label=hist_label(hist, sample_name))
 
     ax.set_yscale("log")
     ax.set_xlabel(axis_title(hist.GetXaxis(), hist_name))
@@ -258,8 +270,8 @@ def plot_overlay_1d(histos, plot_dir):
             continue
 
         for sample_name, hist in hist_list:
-            edges, counts, _, normed_weights = th1_to_np(hist)
-            ax.stairs(normed_weights, edges, label=sample_name)
+            edges, counts, _, weighted_counts = th1_to_np(hist, sample_name)
+            ax.stairs(weighted_counts, edges, label=sample_name)
 
         xlabel = hist_list[0][1].GetXaxis().GetTitle()
 
@@ -308,7 +320,7 @@ def plot_1d_comparison(histos, plot_dir):
         fig, ax = plt.subplots(figsize=(7, 5))
 
         for hist_name, hist in hist_list:
-            edges, counts, _, normed_weights = th1_to_np(hist)
+            edges, counts, _, weighted_counts = th1_to_np(hist, sample_name)
 
             if hist_name.endswith("_cut"):
                 linestyle = "--"
@@ -320,7 +332,7 @@ def plot_1d_comparison(histos, plot_dir):
                 zorder = 2
 
             ax.stairs(
-                normed_weights,
+                weighted_counts,
                 edges,
                 label=hist_name,
                 fill=False,
