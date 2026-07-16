@@ -316,6 +316,8 @@ ROOT::RVec<std::size_t> get4bFatJetIdx(const ROOT::RVecI& FatJet_genJetAK8Idx,
 }
 """)
 
+#We'll define a pt_min so that we can cut there as well.
+pt_min = 150.
 
 #Let's set up a mask to make sure we only investigate events with some tagger score in the desired final state. "FatJet_pt > 300" getHas4bScoreMask(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
 def define_ParT_variables(rdf):
@@ -346,23 +348,25 @@ def define_ParT_variables(rdf):
 
     #Define varibales with nbHad = 0 cut.
     rdf = rdf.Define("FatJet_0b_idx", "get0bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)") 
+    #Include a pt cut in the mask.
+    rdf = rdf.Define("FatJet_0b_trimmed_idx", f"FatJet_0b_idx[Take(FatJet_pt, FatJet_0b_idx) > {pt_min}]")
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_0b_pt", "Take(FatJet_pt, FatJet_0b_idx)")\
-             .Define("FatJet_0b_eta", "Take(FatJet_eta, FatJet_0b_idx)")\
-             .Define("FatJet_0b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_0b_idx)")
+    rdf = rdf.Define("FatJet_0b_pt", "Take(FatJet_pt, FatJet_0b_trimmed_idx)")\
+             .Define("FatJet_0b_eta", "Take(FatJet_eta, FatJet_0b_trimmed_idx)")\
+             .Define("FatJet_0b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_0b_trimmed_idx)")
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_0b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_0b_idx)")\
-             .Define("FatJet_0b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_0b_idx)")\
+    rdf = rdf.Define("FatJet_0b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_0b_trimmed_idx)")\
+             .Define("FatJet_0b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_0b_trimmed_idx)")\
              .Define("FatJet_0b_ParT2_b_channels","FatJet_0b_ParT2_3b + FatJet_0b_ParT2_4b")\
-             .Define("FatJet_0b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_0b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_0b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_0b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_0b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_0b_idx)")\
+             .Define("FatJet_0b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_0b_trimmed_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_0b_trimmed_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_0b_trimmed_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_0b_trimmed_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_0b_trimmed_idx)")\
              .Define("FatJet_0b_ParT2_3b_Normed", "FatJet_0b_ParT2_3b /(FatJet_0b_ParT2_3b +  FatJet_0b_ParT2_QCD)")\
              .Define("FatJet_0b_ParT2_4b_Normed", "FatJet_0b_ParT2_4b /(FatJet_0b_ParT2_4b +  FatJet_0b_ParT2_QCD)")\
              .Define("FatJet_0b_ParT2_b_channels_Normed","FatJet_0b_ParT2_b_channels / (FatJet_0b_ParT2_b_channels + FatJet_0b_ParT2_QCD)")    
     #Define FatJet Tagger Scores for on-shell ParT3 variables.         
-    rdf = rdf.Define("FatJet_0b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_0b_idx)")\
-             .Define("FatJet_0b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_0b_idx)")\
+    rdf = rdf.Define("FatJet_0b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_0b_trimmed_idx)")\
+             .Define("FatJet_0b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_0b_trimmed_idx)")\
              .Define("FatJet_0b_ParT3_b_channels","FatJet_0b_ParT3_3b + FatJet_0b_ParT3_4b")\
-             .Define("FatJet_0b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_0b_idx)")\
+             .Define("FatJet_0b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_0b_trimmed_idx)")\
              .Define("FatJet_0b_ParT3_3b_Normed", "FatJet_0b_ParT3_3b /(FatJet_0b_ParT3_3b +  FatJet_0b_ParT3_QCD)")\
              .Define("FatJet_0b_ParT3_4b_Normed", "FatJet_0b_ParT3_4b /(FatJet_0b_ParT3_4b +  FatJet_0b_ParT3_QCD)")\
              .Define("FatJet_0b_ParT3_b_channels_Normed","FatJet_0b_ParT3_b_channels / (FatJet_0b_ParT3_b_channels + FatJet_0b_ParT3_QCD)")
@@ -370,23 +374,25 @@ def define_ParT_variables(rdf):
     
     #Define varibales with nbHad = 1 cut.
     rdf = rdf.Define("FatJet_1b_idx", "get1bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+    #Include a pt cut in the mask.
+    rdf = rdf.Define("FatJet_1b_trimmed_idx", f"FatJet_1b_idx[Take(FatJet_pt, FatJet_1b_idx) > {pt_min}]")
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_1b_pt", "Take(FatJet_pt, FatJet_1b_idx)")\
-             .Define("FatJet_1b_eta", "Take(FatJet_eta, FatJet_1b_idx)")\
-             .Define("FatJet_1b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_1b_idx)")
+    rdf = rdf.Define("FatJet_1b_pt", "Take(FatJet_pt, FatJet_1b_trimmed_idx)")\
+             .Define("FatJet_1b_eta", "Take(FatJet_eta, FatJet_1b_trimmed_idx)")\
+             .Define("FatJet_1b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_1b_trimmed_idx)")
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_1b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_1b_idx)")\
-             .Define("FatJet_1b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_1b_idx)")\
+    rdf = rdf.Define("FatJet_1b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_1b_trimmed_idx)")\
+             .Define("FatJet_1b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_1b_trimmed_idx)")\
              .Define("FatJet_1b_ParT2_b_channels","FatJet_1b_ParT2_3b + FatJet_1b_ParT2_4b")\
-             .Define("FatJet_1b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_1b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_1b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_1b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_1b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_1b_idx)")\
+             .Define("FatJet_1b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_1b_trimmed_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_1b_trimmed_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_1b_trimmed_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_1b_trimmed_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_1b_trimmed_idx)")\
              .Define("FatJet_1b_ParT2_3b_Normed", "FatJet_1b_ParT2_3b /(FatJet_1b_ParT2_3b +  FatJet_1b_ParT2_QCD)")\
              .Define("FatJet_1b_ParT2_4b_Normed", "FatJet_1b_ParT2_4b /(FatJet_1b_ParT2_4b +  FatJet_1b_ParT2_QCD)")\
              .Define("FatJet_1b_ParT2_b_channels_Normed","FatJet_1b_ParT2_b_channels / (FatJet_1b_ParT2_b_channels + FatJet_1b_ParT2_QCD)")
     #Define FatJet Tagger Scores for on-shell ParT3 variables.         
-    rdf = rdf.Define("FatJet_1b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_1b_idx)")\
-             .Define("FatJet_1b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_1b_idx)")\
+    rdf = rdf.Define("FatJet_1b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_1b_trimmed_idx)")\
+             .Define("FatJet_1b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_1b_trimmed_idx)")\
              .Define("FatJet_1b_ParT3_b_channels","FatJet_1b_ParT3_3b + FatJet_1b_ParT3_4b")\
-             .Define("FatJet_1b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_1b_idx)")\
+             .Define("FatJet_1b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_1b_trimmed_idx)")\
              .Define("FatJet_1b_ParT3_3b_Normed", "FatJet_1b_ParT3_3b /(FatJet_1b_ParT3_3b +  FatJet_1b_ParT3_QCD)")\
              .Define("FatJet_1b_ParT3_4b_Normed", "FatJet_1b_ParT3_4b /(FatJet_1b_ParT3_4b +  FatJet_1b_ParT3_QCD)")\
              .Define("FatJet_1b_ParT3_b_channels_Normed","FatJet_1b_ParT3_b_channels / (FatJet_1b_ParT3_b_channels + FatJet_1b_ParT3_QCD)")
@@ -394,23 +400,25 @@ def define_ParT_variables(rdf):
     
     #Define varibales with nbHad = 2 cut.
     rdf = rdf.Define("FatJet_2b_idx", "get2bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+    #Include a pt cut in the mask.
+    rdf = rdf.Define("FatJet_2b_trimmed_idx", f"FatJet_2b_idx[Take(FatJet_pt, FatJet_2b_idx) > {pt_min}]")
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_2b_pt", "Take(FatJet_pt, FatJet_2b_idx)")\
-             .Define("FatJet_2b_eta", "Take(FatJet_eta, FatJet_2b_idx)")\
-             .Define("FatJet_2b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_2b_idx)")
+    rdf = rdf.Define("FatJet_2b_pt", "Take(FatJet_pt, FatJet_2b_trimmed_idx)")\
+             .Define("FatJet_2b_eta", "Take(FatJet_eta, FatJet_2b_trimmed_idx)")\
+             .Define("FatJet_2b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_2b_trimmed_idx)")
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_2b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_2b_idx)")\
-             .Define("FatJet_2b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_2b_idx)")\
+    rdf = rdf.Define("FatJet_2b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_2b_trimmed_idx)")\
+             .Define("FatJet_2b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_2b_trimmed_idx)")\
              .Define("FatJet_2b_ParT2_b_channels","FatJet_2b_ParT2_3b + FatJet_2b_ParT2_4b")\
-             .Define("FatJet_2b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_2b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_2b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_2b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_2b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_2b_idx)")\
+             .Define("FatJet_2b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_2b_trimmed_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_2b_trimmed_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_2b_trimmed_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_2b_trimmed_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_2b_trimmed_idx)")\
              .Define("FatJet_2b_ParT2_3b_Normed", "FatJet_2b_ParT2_3b /(FatJet_2b_ParT2_3b +  FatJet_2b_ParT2_QCD)")\
              .Define("FatJet_2b_ParT2_4b_Normed", "FatJet_2b_ParT2_4b /(FatJet_2b_ParT2_4b +  FatJet_2b_ParT2_QCD)")\
              .Define("FatJet_2b_ParT2_b_channels_Normed","FatJet_2b_ParT2_b_channels / (FatJet_2b_ParT2_b_channels + FatJet_2b_ParT2_QCD)")
     #Define FatJet Tagger Scores for on-shell ParT3 variables.
-    rdf = rdf.Define("FatJet_2b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_2b_idx)")\
-             .Define("FatJet_2b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_2b_idx)")\
+    rdf = rdf.Define("FatJet_2b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_2b_trimmed_idx)")\
+             .Define("FatJet_2b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_2b_trimmed_idx)")\
              .Define("FatJet_2b_ParT3_b_channels","FatJet_2b_ParT3_3b + FatJet_2b_ParT3_4b")\
-             .Define("FatJet_2b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_2b_idx)")\
+             .Define("FatJet_2b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_2b_trimmed_idx)")\
              .Define("FatJet_2b_ParT3_3b_Normed", "FatJet_2b_ParT3_3b /(FatJet_2b_ParT3_3b +  FatJet_2b_ParT3_QCD)")\
              .Define("FatJet_2b_ParT3_4b_Normed", "FatJet_2b_ParT3_4b /(FatJet_2b_ParT3_4b +  FatJet_2b_ParT3_QCD)")\
              .Define("FatJet_2b_ParT3_b_channels_Normed","FatJet_2b_ParT3_b_channels / (FatJet_2b_ParT3_b_channels + FatJet_2b_ParT3_QCD)")
@@ -418,23 +426,25 @@ def define_ParT_variables(rdf):
 
     #Define varibales with nbHad = 3 cut.
     rdf = rdf.Define("FatJet_3b_idx", "get3bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+    #Include a pt cut in the mask.
+    rdf = rdf.Define("FatJet_3b_trimmed_idx", f"FatJet_3b_idx[Take(FatJet_pt, FatJet_3b_idx) > {pt_min}]")
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_3b_pt", "Take(FatJet_pt, FatJet_3b_idx)")\
-             .Define("FatJet_3b_eta", "Take(FatJet_eta, FatJet_3b_idx)")\
-             .Define("FatJet_3b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_3b_idx)")
+    rdf = rdf.Define("FatJet_3b_pt", "Take(FatJet_pt, FatJet_3b_trimmed_idx)")\
+             .Define("FatJet_3b_eta", "Take(FatJet_eta, FatJet_3b_trimmed_idx)")\
+             .Define("FatJet_3b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_3b_trimmed_idx)")
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_3b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_3b_idx)")\
-             .Define("FatJet_3b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_3b_idx)")\
+    rdf = rdf.Define("FatJet_3b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_3b_trimmed_idx)")\
+             .Define("FatJet_3b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_3b_trimmed_idx)")\
              .Define("FatJet_3b_ParT2_b_channels","FatJet_3b_ParT2_3b + FatJet_3b_ParT2_4b")\
-             .Define("FatJet_3b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_3b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_3b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_3b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_3b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_3b_idx)")\
+             .Define("FatJet_3b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_3b_trimmed_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_3b_trimmed_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_3b_trimmed_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_3b_trimmed_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_3b_trimmed_idx)")\
              .Define("FatJet_3b_ParT2_3b_Normed", "FatJet_3b_ParT2_3b /(FatJet_3b_ParT2_3b +  FatJet_3b_ParT2_QCD)")\
              .Define("FatJet_3b_ParT2_4b_Normed", "FatJet_3b_ParT2_4b /(FatJet_3b_ParT2_4b +  FatJet_3b_ParT2_QCD)")\
              .Define("FatJet_3b_ParT2_b_channels_Normed","FatJet_3b_ParT2_b_channels / (FatJet_3b_ParT2_b_channels + FatJet_3b_ParT2_QCD)")
     #Define FatJet Tagger Scores for on-shell ParT3 variables.
-    rdf = rdf.Define("FatJet_3b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_3b_idx)")\
-             .Define("FatJet_3b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_3b_idx)")\
+    rdf = rdf.Define("FatJet_3b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_3b_trimmed_idx)")\
+             .Define("FatJet_3b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_3b_trimmed_idx)")\
              .Define("FatJet_3b_ParT3_b_channels","FatJet_3b_ParT3_3b + FatJet_3b_ParT3_4b")\
-             .Define("FatJet_3b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_3b_idx)")\
+             .Define("FatJet_3b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_3b_trimmed_idx)")\
              .Define("FatJet_3b_ParT3_3b_Normed", "FatJet_3b_ParT3_3b /(FatJet_3b_ParT3_3b +  FatJet_3b_ParT3_QCD)")\
              .Define("FatJet_3b_ParT3_4b_Normed", "FatJet_3b_ParT3_4b /(FatJet_3b_ParT3_4b +  FatJet_3b_ParT3_QCD)")\
              .Define("FatJet_3b_ParT3_b_channels_Normed","FatJet_3b_ParT3_b_channels / (FatJet_3b_ParT3_b_channels + FatJet_3b_ParT3_QCD)")
@@ -442,23 +452,25 @@ def define_ParT_variables(rdf):
     
     #Define varibales with nbHad = 4 cut.
     rdf = rdf.Define("FatJet_4b_idx", "get4bFatJetIdx(FatJet_genJetAK8Idx, GenJetAK8_nBHadrons)")
+    #Include a pt cut in the mask.
+    rdf = rdf.Define("FatJet_4b_trimmed_idx", f"FatJet_4b_idx[Take(FatJet_pt, FatJet_4b_idx) > {pt_min}]")
     #Define FatJet kinematics
-    rdf = rdf.Define("FatJet_4b_pt", "Take(FatJet_pt, FatJet_4b_idx)")\
-             .Define("FatJet_4b_eta", "Take(FatJet_eta, FatJet_4b_idx)")\
-             .Define("FatJet_4b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_4b_idx)")
+    rdf = rdf.Define("FatJet_4b_pt", "Take(FatJet_pt, FatJet_4b_trimmed_idx)")\
+             .Define("FatJet_4b_eta", "Take(FatJet_eta, FatJet_4b_trimmed_idx)")\
+             .Define("FatJet_4b_msoftdrop", "Take(FatJet_msoftdrop, FatJet_4b_trimmed_idx)")
     #Define FatJet Tagger Scores for on-shell ParT2 variables.
-    rdf = rdf.Define("FatJet_4b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_4b_idx)")\
-             .Define("FatJet_4b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_4b_idx)")\
+    rdf = rdf.Define("FatJet_4b_ParT2_3b", "Take(FatJet_globalParT2_probHZxZxbbb, FatJet_4b_trimmed_idx)")\
+             .Define("FatJet_4b_ParT2_4b", "Take(FatJet_globalParT2_probHZxZxbbbb, FatJet_4b_trimmed_idx)")\
              .Define("FatJet_4b_ParT2_b_channels","FatJet_4b_ParT2_3b + FatJet_4b_ParT2_4b")\
-             .Define("FatJet_4b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_4b_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_4b_idx)")\
+             .Define("FatJet_4b_ParT2_QCD", "Take(FatJet_globalParT2_probQCDb, FatJet_4b_trimmed_idx) + Take(FatJet_globalParT2_probQCDbb, FatJet_4b_trimmed_idx) + Take(FatJet_globalParT2_probQCDc, FatJet_4b_trimmed_idx) + Take(FatJet_globalParT2_probQCDcc, FatJet_4b_trimmed_idx) + Take(FatJet_globalParT2_probQCDothers, FatJet_4b_trimmed_idx)")\
              .Define("FatJet_4b_ParT2_3b_Normed", "FatJet_4b_ParT2_3b /(FatJet_4b_ParT2_3b +  FatJet_4b_ParT2_QCD)")\
              .Define("FatJet_4b_ParT2_4b_Normed", "FatJet_4b_ParT2_4b /(FatJet_4b_ParT2_4b +  FatJet_4b_ParT2_QCD)")\
              .Define("FatJet_4b_ParT2_b_channels_Normed","FatJet_4b_ParT2_b_channels / (FatJet_4b_ParT2_b_channels + FatJet_4b_ParT2_QCD)")
     #Define FatJet Tagger Scores for on-shell ParT3 variables.
-    rdf = rdf.Define("FatJet_4b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_4b_idx)")\
-             .Define("FatJet_4b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_4b_idx)")\
+    rdf = rdf.Define("FatJet_4b_ParT3_3b", "Take(FatJet_globalParT3_probRawHZxZxbbb, FatJet_4b_trimmed_idx)")\
+             .Define("FatJet_4b_ParT3_4b", "Take(FatJet_globalParT3_probRawHZxZxbbbb, FatJet_4b_trimmed_idx)")\
              .Define("FatJet_4b_ParT3_b_channels","FatJet_4b_ParT3_3b + FatJet_4b_ParT3_4b")\
-             .Define("FatJet_4b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_4b_idx)")\
+             .Define("FatJet_4b_ParT3_QCD", "Take(FatJet_globalParT3_QCD, FatJet_4b_trimmed_idx)")\
              .Define("FatJet_4b_ParT3_3b_Normed", "FatJet_4b_ParT3_3b /(FatJet_4b_ParT3_3b +  FatJet_4b_ParT3_QCD)")\
              .Define("FatJet_4b_ParT3_4b_Normed", "FatJet_4b_ParT3_4b /(FatJet_4b_ParT3_4b +  FatJet_4b_ParT3_QCD)")\
              .Define("FatJet_4b_ParT3_b_channels_Normed","FatJet_4b_ParT3_b_channels / (FatJet_4b_ParT3_b_channels + FatJet_4b_ParT3_QCD)")
@@ -596,7 +608,7 @@ def book_histograms(rdf, sample_name, label):
     #Kinematics
     histos["0b_pt"] = rdf.Histo1D((f"h_{sample_name}_FatJet_0b_pt", f"{label} (nBHad >= 0);FatJet p_{{T}} [GeV];Events", 100, 100., 1000.), "FatJet_0b_pt")
     histos["0b_eta"] = rdf.Histo1D((f"h_{sample_name}_FatJet_0b_eta", f"{label} (nBHad >= 0);FatJet #eta;Events", 100, -7., 7.), "FatJet_0b_eta")
-    histos["0b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_0b_msoftdrop", f"{label} (nBHad >=  0);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_0b_msoftdrop")
+    histos["0b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_0b_msoftdrop", f"{label} (nBHad >= 0);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_0b_msoftdrop")
     #On-Shell Tagger Scores
     histos["0b_ParT2_3b"] = rdf.Histo1D((f"h_{sample_name}_0b_ParT2_3b", f"{label} (nBHad >= 0);ParT2 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_0b_ParT2_3b_Normed")
     histos["0b_ParT2_4b"] = rdf.Histo1D((f"h_{sample_name}_0b_ParT2_4b", f"{label} (nBHad >= 0);ParT2 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_0b_ParT2_4b_Normed")
@@ -609,7 +621,7 @@ def book_histograms(rdf, sample_name, label):
     #Kinematics
     histos["1b_pt"] = rdf.Histo1D((f"h_{sample_name}_FatJet_1b_pt", f"{label} (nBHad >= 1);FatJet p_{{T}} [GeV];Events", 100, 100., 1000.), "FatJet_1b_pt")
     histos["1b_eta"] = rdf.Histo1D((f"h_{sample_name}_FatJet_1b_eta", f"{label} (nBHad >= 1);FatJet #eta;Events", 100, -7., 7.), "FatJet_1b_eta")
-    histos["1b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_1b_msoftdrop", f"{label} (nBHad >=  0);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_1b_msoftdrop")
+    histos["1b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_1b_msoftdrop", f"{label} (nBHad >= 1);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_1b_msoftdrop")
     #On-Shell Tagger Scores
     histos["1b_ParT2_3b"] = rdf.Histo1D((f"h_{sample_name}_1b_ParT2_3b", f"{label} (nBHad >= 1);ParT2 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_1b_ParT2_3b_Normed")
     histos["1b_ParT2_4b"] = rdf.Histo1D((f"h_{sample_name}_1b_ParT2_4b", f"{label} (nBHad >= 1);ParT2 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_1b_ParT2_4b_Normed")
@@ -622,7 +634,7 @@ def book_histograms(rdf, sample_name, label):
     #Kinematics
     histos["2b_pt"] = rdf.Histo1D((f"h_{sample_name}_FatJet_2b_pt", f"{label} (nBHad >= 2);FatJet p_{{T}} [GeV];Events", 100, 100., 1000.), "FatJet_2b_pt")
     histos["2b_eta"] = rdf.Histo1D((f"h_{sample_name}_FatJet_2b_eta", f"{label} (nBHad >= 2);FatJet #eta;Events", 100, -7., 7.), "FatJet_2b_eta")
-    histos["2b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_2b_msoftdrop", f"{label} (nBHad >=  0);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_2b_msoftdrop")
+    histos["2b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_2b_msoftdrop", f"{label} (nBHad >= 2);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_2b_msoftdrop")
     #On-Shell Tagger Scores
     histos["2b_ParT2_3b"] = rdf.Histo1D((f"h_{sample_name}_2b_ParT2_3b", f"{label} (nBHad >= 2);ParT2 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_2b_ParT2_3b_Normed")
     histos["2b_ParT2_4b"] = rdf.Histo1D((f"h_{sample_name}_2b_ParT2_4b", f"{label} (nBHad >= 2);ParT2 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_2b_ParT2_4b_Normed")
@@ -635,7 +647,7 @@ def book_histograms(rdf, sample_name, label):
     #Kinematics
     histos["3b_pt"] = rdf.Histo1D((f"h_{sample_name}_FatJet_3b_pt", f"{label} (nBHad >= 3);FatJet p_{{T}} [GeV];Events", 100, 100., 1000.), "FatJet_3b_pt")
     histos["3b_eta"] = rdf.Histo1D((f"h_{sample_name}_FatJet_3b_eta", f"{label} (nBHad >= 3);FatJet #eta;Events", 100, -7., 7.), "FatJet_3b_eta")
-    histos["3b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_3b_msoftdrop", f"{label} (nBHad >=  0);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_3b_msoftdrop")
+    histos["3b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_3b_msoftdrop", f"{label} (nBHad >=  3);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_3b_msoftdrop")
     #On-Shell Tagger Scores
     histos["3b_ParT2_3b"] = rdf.Histo1D((f"h_{sample_name}_3b_ParT2_3b", f"{label} (nBHad >= 3);ParT2 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_3b_ParT2_3b_Normed")
     histos["3b_ParT2_4b"] = rdf.Histo1D((f"h_{sample_name}_3b_ParT2_4b", f"{label} (nBHad >= 3);ParT2 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_3b_ParT2_4b_Normed")
@@ -648,7 +660,7 @@ def book_histograms(rdf, sample_name, label):
     #Kinematics
     histos["4b_pt"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_pt", f"{label} (nBHad >= 4);FatJet p_{{T}} [GeV];Events", 100, 100., 1000.), "FatJet_4b_pt")
     histos["4b_eta"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_eta", f"{label} (nBHad >= 4);FatJet #eta;Events", 100, -7., 7.), "FatJet_4b_eta")
-    histos["4b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_msoftdrop", f"{label} (nBHad >=  0);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_4b_msoftdrop")
+    histos["4b_msoftdrop"] = rdf.Histo1D((f"h_{sample_name}_FatJet_4b_msoftdrop", f"{label} (nBHad >=  4);Soft drop mass [GeV];Events", 100, 20., 120.), "FatJet_4b_msoftdrop")
     #On-Shell Tagger Scores
     histos["4b_ParT2_3b"] = rdf.Histo1D((f"h_{sample_name}_4b_ParT2_3b", f"{label} (nBHad >= 4);ParT2 bbb / (bbb + QCD);Events", 100, 0., 1.), "FatJet_4b_ParT2_3b_Normed")
     histos["4b_ParT2_4b"] = rdf.Histo1D((f"h_{sample_name}_4b_ParT2_4b", f"{label} (nBHad >= 4);ParT2 bbbb / (bbbb + QCD);Events", 100, 0., 1.), "FatJet_4b_ParT2_4b_Normed")
@@ -710,7 +722,7 @@ for sample_name, rdf in rdf_defined.items():
     histos[sample_name] = book_histograms(rdf, sample_name, samples[sample_name]["label"])
 
 #Finally, we'll save them.
-save_histograms(histos, output_dir="nBH_cut_histograms")
+save_histograms(histos, output_dir="nBH_pt_cut_histograms")
 
 
 

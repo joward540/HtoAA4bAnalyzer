@@ -170,7 +170,7 @@ def plot_1d(hist, sample_name, hist_name, output_path):
     ax.set_title(f"{sample_name}: {hist_name}")
     ax.legend()
 
-    ax.text(0.95, 0.75, f"Entries = {int(entries)}", transform=ax.transAxes, ha="right", va="top")
+    ax.text(0.90, 0.65, f"Entries = {int(entries)}", transform=ax.transAxes, ha="right", va="top")
 
     fig.tight_layout()
     fig.savefig(output_path, dpi=300)
@@ -277,6 +277,8 @@ def plot_overlay_1d(histos, plot_dir):
         #output_name = overlay_dir / f"overlay_{clean_name(sample_name)}_{clean_name(hist_name)}.png"
         fig.savefig(output_name, dpi=300)
         plt.close(fig)
+
+
 def plot_1d_comparison(histos, plot_dir):
     compare_dir = Path(plot_dir) / "comparisons"
     compare_dir.mkdir(parents=True, exist_ok=True)

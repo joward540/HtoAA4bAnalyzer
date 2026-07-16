@@ -49,8 +49,8 @@ def sample_key_from_label(plot_label):
 
 weights = {"QCD0B": 0.480723, 
            "QCDB": 0.615936, 
-           "M30": 72416000, 
-           "M35": 152346400
+           "M30": 0.0753455, 
+           "M35": 0.120553
            }
 
 def th1_to_np(hist, sample_name):
@@ -288,7 +288,7 @@ def plot_overlay_1d(histos, plot_dir):
         sample_names = [sample_name for sample_name, _ in hist_list]
         sample_tag = "_vs_".join(clean_name(name) for name in sample_names)
 
-        output_name = overlay_dir / f"overlay_{sample_tag}_{clean_name(hist_name)}.png"
+        output_name = overlay_dir / f"br_p1_overlay_{sample_tag}_{clean_name(hist_name)}.png"
 
         #output_name = overlay_dir / f"overlay_{clean_name(sample_name)}_{clean_name(hist_name)}.png"
         fig.savefig(output_name, dpi=300)
@@ -354,7 +354,7 @@ def plot_1d_comparison(histos, plot_dir):
         fig.tight_layout()
 
         compared_names = "_vs_".join(clean_name(name) for name, _ in hist_list)
-        output_name = compare_dir / f"compare_{clean_name(sample_name)}_{compared_names}.png"
+        output_name = compare_dir / f"br_p1_compare_{clean_name(sample_name)}_{compared_names}.png"
 
         fig.savefig(output_name, dpi=300)
         plt.close(fig)
