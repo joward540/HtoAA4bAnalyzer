@@ -217,7 +217,7 @@ if invalid_b_cuts:
 # Remove duplicates and use a deterministic order.
 b_cuts = sorted(set(args.b_cuts))
 print(f"Building nBHad selections for thresholds: {b_cuts}")
-print("Cumulative histograms: "\n, f"mode={args.cumulative}, direction={args.cumulative_direction}, "\n,  f"normalized={args.normalize_cumulative}")
+print("Cumulative histograms: "\n, f"mode={args.cumulative}, direction={args.cumulative_direction}, "\n, f"normalized={args.normalize_cumulative}")
 
 if args.dataset is None:
     samples_to_run = samples
@@ -630,10 +630,92 @@ def book_histograms(rdf, sample_name, label, selected_b_cuts):
 
     return histos
 
+#Save histogram suffixes.
+SCORE_HISTOGRAM_SUFFIXES = (
+    "ParT2_3b",
+    "ParT2_4b",
+    "ParT2_b_channels",
+    "ParT3_3b",
+    "ParT3_4b",
+    "ParT3_b_channels",
+)
+
+#Let's make a flag for the cumulative histograms.
+def cumulative_flag(hist_name, cumulative_mode):
+
+    if cumulative_mode == "none":
+        return False
+
+    if cumulative_mode == "all":
+        return True
+
+
+    return any(hist_name == suffix or hist_name.endswith(f"_{suffix}") for suffix in SCORE_HISTOGRAM_SUFFIXES)
+
+
+#Here's our function for generating cumultative histograms.
+def make_cumulative_histogram(hist, direction="above", normalize=False):
+    if direction not in {"above", "below"}:
+        raise ValueError("Direction must be 'above' or 'below'")
+
+    cumulative = hist.Clone(f"{hist.GetName()}_cumulative")
+    cumulative.SetDirectory(0)
+
+    nbins = hist.GetBinsX()
+
+    if direction == "above":
+        running_content = hist.GetBinContent(nbins + 1)
+        running_error2 = hist.GetBinError(nbins + 1)**2
+
+        cumulative.SetBinContent(nbins + 1, running_content)
+        cumulative.SetBinError(nbins + 1, math.sqrt(running_error2))
+
+        for bin_idx in range(nbins, 0, -1):
+            running_content += hist.GetBinContent(bin_idx)
+            running_error2 += hist.GetBinError(bin_idx)**2
+            cumulative.SetBinContent(bin_idx, running_content)
+            cumulative.SetBinError(bin_idx, math.sqrt(running_error2))
+
+
+        cumulative.SetBinContent(0, running_content + hist.GetBinContent(0))
+        cumulative.SetBinError(0, math.sqrt(running_error2 + hist.GetBinError(0)**2))
+
+        normalization = cumulative.GetBinContent(0)
+        direction_text = "At or above threshold."
+
+    else:
+        running_content = hist.GetBinContent(0)
+        running_error2 = hist.GetBinError(0)**2
+
+        cumulative.SetBinContent(0)
+        cumulative.GetBinError(0)**2
+
+        for bin_idx in range(1, nbins + 1):
+            running_content += hist.GetBinContent(bin_idx)
+            running_error2 += hist.GetBinError(bin_idx)**2
+            cumulative.SetBinContent(bin_idx, running_content)
+            cumulative.SetBinError(bin_idx, math.sqrt(running_error2))
+
+
+        cumulative.SetBinContent(nbins + 1, running_content + hist.GetBinContent(nbins + 1))
+        cumulative.SetBinError(nbins + 1, math.sqrt(running_error2 + hist.GetBinError(nbins + 1)**2),)
+        normalization = cumulative.GetBinContent(nbins + 1)
+        direction_text = "At or above threshold."
+
+    if normalize and normalization !=0.0:
+        cumulative.Scale(1.0 / normalization)
+        cumulative.GetYaxis().SetTitle("Cumulative fraction")
+    else:
+        cumulative.GetYaxis().SetTitle("Cumulative events")
+
+    cumulative.SetTitle(f"{hist.GetTitle().split(';')[0]} ({direction_text})")
+
+    cumulative.GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+
+    return cumulative
 
 #Now, let's make a function to save our histograms in .ROOT files. We'll make one file per dataset/sample.
-
-def save_histograms(histos, output_dir="histograms"):
+def save_histograms(histos, output_dir="histograms", cumulative_mode="scores", cumulative_direction="above", normalize_cumulative=False):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -655,6 +737,13 @@ def save_histograms(histos, output_dir="histograms"):
             hist.Write(hist_name)
 
             print(f"Wrote {hist_name} to {output_filename}")
+
+            if cumulative_flag(hist_name, cumulative_mode):
+                cumulative_hist = make_cumulative_histogram(hist, direction=cumulative_direction, normalize=normalize_cumulative)
+                cumulative_name = f"{hist_name}_cumulative"
+                cumulative_hist.Write(cumulative_name)
+                print(f"Wrote {cumulative_name} to {output_filename}")
+
 
         outfile.Close()
         print(f"Saved {output_filename}")
@@ -684,7 +773,7 @@ for sample_name, rdf in rdf_defined.items():
     )
 
 #Finally, we'll save them.
-save_histograms(histos, output_dir="nBH_pt_cut_histograms")
+save_histograms(histos, output_dir = "nBH_pt_cut_histograms", cumulative_mode = args.cumulative, cumulative_direction = args.cumulative_direction, normalize_cumulative = args.normalize_cumulative)
 
 
 
